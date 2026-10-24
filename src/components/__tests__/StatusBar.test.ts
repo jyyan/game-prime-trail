@@ -1,18 +1,61 @@
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import StatusBar from '../ui/StatusBar.vue';
 
-const base = { levelId: 123, difficulty: 'advanced', elapsedMs: 754_000, steps: 57, assisted: false } as const;
+const base = { steps: 57, assisted: false, mode: 'trail', next: 12, pending: '' } as const;
+
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('StatusBar', () => {
-  it('renders level, difficulty, time and steps', () => {
+  it('renders the steps; map, difficulty and time live in the top bar now', () => {
     const wrapper = mount(StatusBar, { props: base });
     const text = wrapper.text();
-    expect(text).toContain('地圖 #0123');
-    expect(text).toContain('進階');
-    expect(text).toContain('12:34');
-    expect(text).toContain('步數 57');
-    expect(text).toContain('地圖 #0123・進階・12:34・步數 57');
+    expect(wrapper.get('[data-steps]').text()).toBe('步數 57');
+    expect(text).not.toContain('地圖');
+    expect(text).not.toMatch(/\d\d:\d\d/);
+  });
+
+  it('trail mode shows "next: n" in the big number style', () => {
+    const wrapper = mount(StatusBar, { props: base });
+    expect(wrapper.get('[data-next]').text()).toBe('下一個：12');
+    expect(wrapper.get('[data-next-value]').classes()).toContain('pt-num');
+    expect(wrapper.find('[data-pending]').exists()).toBe(false);
+  });
+
+  it('trail mode hides "next" once the head is 100', () => {
+    const wrapper = mount(StatusBar, { props: { ...base, next: null } });
+    expect(wrapper.find('[data-next]').exists()).toBe(false);
+    expect(wrapper.get('[data-steps]').text()).toBe('步數 57');
+  });
+
+  it('direct mode shows the pending digits instead of "next", up to the three-digit 100', async () => {
+    const wrapper = mount(StatusBar, { props: { ...base, mode: 'direct', pending: '' } });
+    expect(wrapper.find('[data-next]').exists()).toBe(false);
+    expect(wrapper.get('[data-pending-box]').text()).toContain('輸入中：');
+    expect(wrapper.get('[data-pending]').text()).toBe('');
+    for (const pending of ['1', '10', '100']) {
+      await wrapper.setProps({ pending });
+      expect(wrapper.get('[data-pending]').text()).toBe(pending);
+    }
+  });
+
+  it('a bumped rejectSeq flashes the pending box and announces why, then clears', async () => {
+    const wrapper = mount(StatusBar, { props: { ...base, mode: 'direct', pending: '100', rejectSeq: 0 } });
+    expect(wrapper.get('[data-pending-box]').classes()).not.toContain('is-rejected');
+    await wrapper.setProps({ rejectSeq: 1 });
+    expect(wrapper.get('[data-pending-box]').classes()).toContain('is-rejected');
+    expect(wrapper.get('[data-pending-rejected]').text()).toBe('數字超出 1 到 100，這一鍵沒有輸入');
+    expect(wrapper.get('[data-pending]').text()).toBe('100');
+    vi.advanceTimersByTime(300);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.get('[data-pending-box]').classes()).not.toContain('is-rejected');
+    expect(wrapper.find('[data-pending-rejected]').exists()).toBe(false);
   });
 
   it('hides the assisted badge by default', () => {

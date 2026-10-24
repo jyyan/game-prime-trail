@@ -32,7 +32,6 @@
 - **R30 LevelPicker 空白欄位即顯示錯誤**【UI・低】：依 plan 字面，首頁初次載入欄位空白就顯示 `picker.invalidId`；若希望空白時只停用不提示，需先改 plan／spec。來源 GAME-14。
 - **R31 LevelPicker 有效 id 按 Enter 的路徑沒測**【測試・低】：只測了無效 id 按 Enter 不 emit；刪掉 `@keydown.enter` 測試仍會過。layer-C 審查建議。來源 GAME-14。
 - **R32 已 assisted 的局重新開始後重新整理會失去輔助標記**【規格・低】：重開後尚未落子不寫存檔（避免 `lastPlayed` 指向空局），此時重新整理則 `assisted` 不保留（記憶體內仍在，存檔已依 §7.6 刪除）。若要保留，需在 spec §7.6 定義「空局但 assisted」的存檔方式。來源 GAME-16。
-- **R33 操作列「清除」語意未在 spec 定義**【UI・低】：接續模式等同撤回最後一格（undo），指定模式等同 Backspace（先刪 pending、空了才清選取格）；spec §9 只列按鈕名稱。來源 GAME-16。
 - **R34 D1 視圖層測試缺口**【測試・低】：layer-D 審查指出：session 層沒測「切模式時 pending 保留」；`main.ts` 呼叫 `installE2eHooks` 的接線未被測試執行（E1 會間接覆蓋）；PlayView 只測 ArrowDown／Tab 的按鍵轉發，Ctrl+Z、過關鎖盤、Modal 開啟時按鍵不作用於棋盤只在 session 單元測試。不擋合併。來源 GAME-16。
 - **R35 首頁紀錄不隨其他分頁即時更新**【UI・低】：HomeView 掛載時讀 localStorage，其他分頁寫入的紀錄與 `lastPlayed` 要重新整理才出現；要即時可監聽 `storage` 事件。來源 GAME-17。
 - **R36 D2 測試強度不足**【測試・低】：layer-D 審查指出：missing／error 文案以同一個 `t()` 比對、缺鍵時兩邊同為 fallback 仍會過；R22 的 ready 守門透過 UI 無法觸及、移除不會失敗；records／progress 隨 `libraryVersion` 變化與非 ready 的 fallback 沒測。不擋合併。來源 GAME-17。
@@ -42,9 +41,12 @@
 - **R40 E2E 斷言強度不足**【測試・低】：layer-E 審查指出：03 的「不捲動」未確認頁面本身可捲動；04／06 的 `[data-also-valid]`、`[data-new-best]`、`[data-assisted]` 只有 `toHaveCount(0)` 的負向斷言，01 也沒有正向驗 `[data-new-best]`，選擇器寫錯仍會過；06 只驗 `%PDF` 檔頭；07 在 dev server 下恆回 index.html，只有 wrangler project 真的驗到 fallback。不擋合併。來源 GAME-19。
 - **R41 部署設定與快取標頭沒有自動檢查**【測試・低】：`public/_headers` 的規則與 SPA fallback 只在 E2 以手動 curl 驗過（見 CLAUDE.LOG GAME-20），`docs/deploy.md` 的部署後驗證是人工勾選；可加一個以 `wrangler dev` 跑 curl 的檢查腳本，或併入 E1 的 wrangler project。layer-E 審查建議。來源 GAME-20。
 - **R43 對比檢查與棋盤配色沒有進自動守門**【測試・低】：`scripts/check-contrast.ts` 不在任何 package.json script，DoD 不會跑；它只讀 `main.scss` token，`board.scss` 實際塗的環色、白字覆寫、黏土陰影與 `:focus-visible` 沒有測試，改壞不會有測試失敗。可把腳本加進 `pnpm test` 前置或寫成 vitest 測試，並讓它從 `board.scss` 取色。layer-U-A 審查建議。來源 GAME-23。
+- **R44 棋盤鍵盤焦點環靠 blur 再聚焦升級**【a11y・低】：棋盤以 `focusVisible: false` 聚焦後，Chrome 不會因按鍵改成 focus-visible，GameBoard 在第一個非修飾鍵時 blur 再以 `focusVisible: true` 重新聚焦，會多送一組 blur／focus 事件；日後在棋盤掛 focus／blur 處理要留意。來源 GAME-24。
+- **R45 U-B1 測試強度不足**【測試・低】：layer-U-B 審查指出：「下一個」測試只斷言大於前值而非精確值；掛載聚焦測試未驗 `focusVisible: false`（只有 e2e 涵蓋，且依賴 Chromium 支援）；GameBoard 焦點環測試 mock `matches`；e2e 11 的拒絕閃爍依賴約 300ms 計時，慢機可能 flaky。來源 GAME-24。
 
 ## 已結
 
+- **R33 操作列「清除」語意未在 spec 定義**：UI refresh 移除操作列「清除」，接續模式用「復原」、指定模式用數字鍵盤「清除」。2026-10-25 GAME-24 合併。
 - **R42 遊戲頁主棋盤在 320px 寬手機溢出**：`board.scss` 的 `--cell` 下限 30px → 26px；320px 視窗實測格寬 27.6px、無水平捲動，e2e/10-small-screen 守住。約 302px 以下仍會溢出（實際罕見）。2026-10-25 GAME-22 合併。
 - **R11 進階提示數可能全數卡在 ADV_FLOOR=6**：D4 正式題庫 hintCount 為 6:1000，進階難度張與張之間提示數無差異。2026-10-25 使用者裁定先接受、不調參。日後若要拉開差異，須調 `advFloor` 等參數、換 `generator` 版本字串並發新題庫版本（`libraryVersion` 2，舊紀錄依 §7.5 前綴隔離），另開任務。
 - **R13 `src/data/levels.meta.jsonl` 是否 commit 未定**：依 plan D4 commit 進 repo（續跑與 `--recompute` 的依據）。2026-10-25 GAME-18 合併。

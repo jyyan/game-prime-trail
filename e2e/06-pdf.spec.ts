@@ -1,13 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import { confirmDialog, confirmOk, fillByTrail, openPlay } from './helpers';
+import { confirmDialog, confirmOk, fillByTrail, menuAction, openPlay } from './helpers';
 
 // Spec §12.3 scenario 6 / §6.9: a plain export downloads a PDF and leaves `assisted` alone;
 // ticking "include solution" mid-game asks first and, once confirmed, marks the game assisted.
 test('pdf: plain export downloads a PDF; solution page mid-game needs confirm and marks assisted', async ({ page }) => {
   await openPlay(page, 1, 'easy');
 
-  await page.locator('[data-action="exportPdf"]').click();
+  await menuAction(page, 'exportPdf');
   const dialog = page.locator('.modal', { has: page.locator('[data-include-solution]') });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('[data-include-solution]')).not.toBeChecked();
@@ -23,7 +23,7 @@ test('pdf: plain export downloads a PDF; solution page mid-game needs confirm an
 
   // One cell in: the game is in play, so the solution page now costs the record.
   await fillByTrail(page, 1, 100, 1);
-  await page.locator('[data-action="exportPdf"]').click();
+  await menuAction(page, 'exportPdf');
   await expect(dialog).toBeVisible();
   await dialog.locator('[data-include-solution]').check();
   await expect(confirmDialog(page)).toContainText('匯出含解答的 PDF 後，這局不列入最佳紀錄。');

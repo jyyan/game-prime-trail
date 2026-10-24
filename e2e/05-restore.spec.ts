@@ -8,6 +8,7 @@ import {
   fillByTrail,
   filledCount,
   givenCells,
+  menuAction,
   openPlay,
   pickOnHome,
   readProgress,
@@ -43,16 +44,16 @@ test('restore: reload keeps the board and steps, restart clears it and its save'
   await waitReady(page);
   await expect(board(page)).toBeVisible();
   await expectCells(page, filled, numbers);
-  await expect(page.locator('[data-summary]')).toContainText('步數 5');
+  await expect(page.locator('[data-steps]')).toHaveText('步數 5');
   await expect(page.locator('.toast')).toContainText('已恢復進度');
 
   await dismissToasts(page);
-  await page.locator('[data-action="restart"]').click();
+  await menuAction(page, 'restart');
   await expect(confirmDialog(page)).toContainText('清除目前盤面並重新計時？');
   await confirmOk(page);
   for (const c of filled) await expect(cell(page, c)).toHaveText('');
   expect(await filledCount(page)).toBe(givenCount);
-  await expect(page.locator('[data-summary]')).toContainText('步數 0');
+  await expect(page.locator('[data-steps]')).toHaveText('步數 0');
   await expect.poll(async () => '1:easy' in (await readProgress(page))).toBe(false);
 });
 
@@ -79,5 +80,5 @@ test('restore: home "continue" and "start" both resume the saved game', async ({
   await page.locator('[data-action="start"]').click();
   await expect(page).toHaveURL(/\/play\/2\/advanced$/);
   await expectCells(page, filled, numbers);
-  await expect(page.locator('[data-summary]')).toContainText('步數 3');
+  await expect(page.locator('[data-steps]')).toHaveText('步數 3');
 });

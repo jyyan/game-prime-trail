@@ -83,7 +83,7 @@ function onPointerDown(e: PointerEvent): void {
   if (cell === null) return;
   // Keep keyboard focus on the board (cells are not tab stops) so digits and arrows keep working.
   e.preventDefault();
-  boardEl.value?.focus({ preventScroll: true });
+  focus();
   emit('press', cell);
   if (props.mode !== 'trail') return;
   endDrag();
@@ -121,7 +121,29 @@ function onPointerEnd(e: PointerEvent): void {
   emit('dragend');
 }
 
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta']);
+
+/**
+ * The board was focused quietly (mount or a pointer press), so it has no ring; once the player
+ * uses the keyboard on it, show the ring. Re-focusing an already focused element is a no-op,
+ * hence the blur first.
+ */
+function showKeyboardFocus(e: KeyboardEvent): void {
+  const el = boardEl.value;
+  if (!el || e.target !== el || document.activeElement !== el || MODIFIER_KEYS.has(e.key)) return;
+  let visible: boolean;
+  try {
+    visible = el.matches(':focus-visible');
+  } catch {
+    return; // Selector not supported: leave focus alone.
+  }
+  if (visible) return;
+  el.blur();
+  el.focus({ preventScroll: true, focusVisible: true });
+}
+
 function onKeyDown(e: KeyboardEvent): void {
+  showKeyboardFocus(e);
   if (props.readonly) return;
   // §6.1: Enter on a focused cell is a press (e.g. a cell focused by assistive tech).
   // Enter with focus on the board itself goes out as `key` (direct mode: confirm).
@@ -159,8 +181,15 @@ function shake(cell: Cell): void {
   });
 }
 
+/**
+ * Programmatic focus (pointer press, PlayView mount). Chrome counts a script focus with no prior
+ * pointer interaction as :focus-visible, which drew the keyboard ring on load (§5.1); asking for
+ * `focusVisible: false` keeps the ring for real keyboard navigation only.
+ */
+const QUIET_FOCUS: FocusOptions = { preventScroll: true, focusVisible: false };
+
 function focus(): void {
-  boardEl.value?.focus();
+  boardEl.value?.focus(QUIET_FOCUS);
 }
 
 onBeforeUnmount(() => {

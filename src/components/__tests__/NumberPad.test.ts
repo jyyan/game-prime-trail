@@ -2,8 +2,8 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import NumberPad from '../input/NumberPad.vue';
 
-function mountPad(props: Partial<{ disabled: boolean; pending: string }> = {}) {
-  return mount(NumberPad, { props: { disabled: false, pending: '', ...props } });
+function mountPad(props: Partial<{ disabled: boolean }> = {}) {
+  return mount(NumberPad, { props: { disabled: false, ...props } });
 }
 
 describe('NumberPad', () => {
@@ -42,9 +42,11 @@ describe('NumberPad', () => {
     expect(wrapper.emitted('digit')).toBeUndefined();
   });
 
-  it('shows the pending value, including the three-digit 100', () => {
-    const wrapper = mountPad({ pending: '100' });
-    expect(wrapper.find('[data-pending]').text()).toBe('100');
+  it('has no pending display of its own: the status bar shows it (UI refresh §4.3)', () => {
+    const wrapper = mountPad();
+    expect(wrapper.find('[data-pending]').exists()).toBe(false);
+    expect(wrapper.find('output').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('輸入中');
   });
 
   it('labels keys through i18n', () => {

@@ -18,7 +18,8 @@ test('direct mode: two-digit entry, duplicate marks two cells, undo clears them'
   await expect(cell(page, first)).toHaveClass(/is-selected/);
   await pad.locator('[data-key="1"]').click();
   await pad.locator('[data-key="2"]').click();
-  await expect(pad.locator('[data-pending]')).toHaveText('12');
+  // The digits typed so far show in the status bar under the board (UI refresh spec §4.3).
+  await expect(page.locator('.pt-status-bar [data-pending]')).toHaveText('12');
   await pad.locator('[data-key="confirm"]').click();
   await expect(cell(page, first)).toHaveText('12');
   await expect(board(page).locator('.is-conflict')).toHaveCount(0);

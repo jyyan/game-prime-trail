@@ -13,7 +13,7 @@ test('main flow: start from home, solve level 1 easy by trail, cleared mark pers
   const path = await solutionOf(page, 1);
   await fillByTrail(page, 1, 99);
   // The win must show a non-zero time: let the clock pass one second before the last cell.
-  await expect(page.locator('[data-summary]')).not.toContainText('00:00');
+  await expect(page.locator('[data-timer]')).not.toHaveText('00:00');
   await cell(page, path[99]).click();
 
   const modal = page.locator('.modal');

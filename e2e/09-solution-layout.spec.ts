@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
-import { confirmOk, openPlay } from './helpers';
+import { confirmOk, menuAction, openPlay } from './helpers';
 
 // GAME-21 / spec §6.8, §9: the solution board must fit inside the solution dialog on every width.
 const TOLERANCE = 1;
@@ -16,7 +16,7 @@ async function expectInside(inner: Locator, outer: Locator): Promise<void> {
 test('solution board stays inside the solution dialog', async ({ page }) => {
   await openPlay(page, 1, 'easy');
 
-  await page.locator('[data-action="viewSolution"]').click();
+  await menuAction(page, 'viewSolution');
   await confirmOk(page);
 
   const solution = page.locator('.modal .pt-solution');
