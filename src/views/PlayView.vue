@@ -126,7 +126,7 @@ function openPdf(): void {
         @back-home="router.push('/')"
         @export-pdf="openPdf"
       />
-      <BsModal v-model="showSolution" :title="t('solution.title')" :close-label="t('common.close')">
+      <BsModal v-model="showSolution" size="lg" :title="t('solution.title')" :close-label="t('common.close')">
         <SolutionView :level="level" :puzzle="game.puzzle" :player-grid="state.grid" :solved="won" />
       </BsModal>
       <PdfExportDialog

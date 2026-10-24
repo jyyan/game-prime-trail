@@ -59,3 +59,19 @@ const alsoValid = computed(() => props.solved && !gridEquals(props.playerGrid, p
     />
   </div>
 </template>
+
+<style scoped>
+/*
+ * The shared board sizes --cell from the viewport (src/styles/board.scss), but inside the
+ * solution dialog the available width is the modal body, which is narrower than 100vw - 16px.
+ * Size the cells from this container instead so the 11-unit-wide board never overflows it.
+ * The 20px floor still fits a 320px-wide phone (modal body ≈ 270px ≥ 11 × 20px).
+ */
+.pt-solution {
+  container-type: inline-size;
+}
+
+.pt-solution :deep(.pt-board) {
+  --cell: clamp(20px, calc(100cqi / 11), 48px);
+}
+</style>
