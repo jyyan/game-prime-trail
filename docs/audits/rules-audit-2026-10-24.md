@@ -99,4 +99,14 @@
 
 ## 已套用
 
-（尚無）
+使用者裁定：套用 P1a P2a R1a R2a R3a；其餘（R4–R11、P3）未裁定，不動。
+
+| 編號 | commit | 內容 |
+|---|---|---|
+| P1 | `e4146de` | CLAUDE.md:7 改指向 spec（內建 hunk 原文） |
+| P2 | `9fa9c83` | 權威文件表加列 spec，「尚未建立」改為「架構決策文件尚未建立」（內建 hunk 原文） |
+| R1 | `7dec265` | CLAUDE.md、routine-checklist、backlog R1 的 npm 指令全改 pnpm；加 `test:slow`、`test:e2e`，註明不可寫 `pnpm deploy` |
+| R2 | `21959bd` | CLAUDE.md「專案」段寫明已登錄 taskboard `GAME`；開 taskboard 任務 `GAME-1`（backlog_ref R1），backlog R1 標註 `GAME-1` 並保持開放，由任務結案 |
+| R3 | `323f972` | CLAUDE.md:28 加「草稿 spec 不覆蓋本檔」 |
+
+套用後重跑機械盤點（`prompt-inventory.md`）：失效引用只剩 `@vue/test-utils`、`dist/` 兩個已知誤報（R10）。`docs/superpowers/plan-template.md` 的 args 範例仍寫 `npm run …`，屬範本檔、不在 R1 的三檔範疇內，未改。
