@@ -1,0 +1,74 @@
+{
+  "spec": "docs/superpowers/specs/2026-10-25-ui-refresh.md",
+  "plan": "docs/superpowers/plans/2026-10-25-ui-refresh.md",
+  "layer": "U-A",
+  "base": "d05f9b77b9fe4e3106e3cf5e0c4a8aa1efd2e8fd",
+  "setup": [
+    "pnpm install --frozen-lockfile"
+  ],
+  "dod": [
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm build"
+  ],
+  "tasks": [
+    {
+      "id": "U-A1",
+      "title": "設計 token、棋盤配色、字型與插圖資產（taskboard GAME-23；草稿檔名用 GAME-23.md）。插圖原檔在 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/df415385-e9ec-477a-9191-d7ddcb42c063/scratchpad/uiux/art/ 的 hero.png（1600×1000，已是黃格版）、win.png、missing.png（1000×1000，透明）、icon.png（1024×1024）、prompt.md：複製原檔與 prompt.md 到 docs/design/illustrations/，壓成 public/illustrations/*.webp（保留透明；可用 sharp 以外的工具，例如 macOS 的 cwebp 若存在、或 pnpm dlx @squoosh/cli／pnpm dlx sharp-cli，但不得把新工具加進 package.json，唯一允許新增的依賴是 @fontsource/fredoka），並由 icon.png 縮出 public/favicon.png（64px）與 public/apple-touch-icon.png（180px）。新增依賴請用 pnpm add @fontsource/fredoka 並確保 pnpm install --frozen-lockfile 仍可通過。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。playwright 用 port 4173／8788，跑前確認未被佔用、跑完不留殘留程序。截圖存 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/df415385-e9ec-477a-9191-d7ddcb42c063/scratchpad/uiux/art/../ua1-*.png，不 commit",
+      "files": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/styles/main.scss",
+        "src/styles/board.scss",
+        "src/components/board/BoardCell.vue",
+        "src/components/board/__tests__/BoardCell.test.ts",
+        "index.html",
+        "public/illustrations/hero.webp",
+        "public/illustrations/win.webp",
+        "public/illustrations/missing.webp",
+        "public/favicon.png",
+        "public/apple-touch-icon.png",
+        "docs/design/illustrations/prompt.md",
+        "docs/design/illustrations/hero.png",
+        "docs/design/illustrations/win.png",
+        "docs/design/illustrations/missing.png",
+        "docs/design/illustrations/icon.png",
+        "scripts/check-contrast.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-23.md",
+        "docs/backlog/drafts/GAME-23.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/superpowers/**",
+        "src/views/**",
+        "src/components/** 除 board/BoardCell.vue 與其測試",
+        "src/i18n/**",
+        "src/composables/**",
+        "src/core/**",
+        "src/data/**",
+        "src/pdf/**",
+        "e2e/**",
+        "playwright.config.ts",
+        "scripts/gen-*",
+        "scripts/lib/**",
+        "public/fonts/**",
+        "public/_headers",
+        "wrangler.jsonc"
+      ],
+      "acceptance": [
+        "pnpm exec tsx scripts/check-contrast.ts（全部組合 ≥ 4.5:1 或標明大字 ≥ 3:1；非零退出碼為失敗）",
+        "ls -la public/illustrations/（hero ≤ 120 KB、win 與 missing ≤ 80 KB）",
+        "pnpm test:e2e（全部 project 全綠；配色改動不得弄壞既有情境）"
+      ],
+      "planSection": "### Task U-A1"
+    }
+  ],
+  "models": {
+    "implement": "opus",
+    "verify": "haiku",
+    "review": "sonnet",
+    "fix": "opus"
+  }
+}
