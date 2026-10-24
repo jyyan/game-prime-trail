@@ -1,0 +1,8 @@
+# Cloudflare Workers Static Assets 標頭規則（見 docs/deploy.md）
+# Vite 產物檔名含內容 hash，可長期快取且不可變。
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# PDF 字型檔名不含 hash，重新產生後須能更新：短快取。
+/fonts/*
+  Cache-Control: public, max-age=86400
