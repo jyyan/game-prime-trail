@@ -188,9 +188,9 @@ function openPdf(): void {
   max-width: 560px;
 }
 
-.pt-play__board-wrap {
-  overflow-x: auto;
-}
+/* .pt-play__board-wrap deliberately sets no overflow: any non-visible overflow-x also turns
+   overflow-y into auto and clips the board's clay shadow (GAME-27). Since GAME-22 the board fits
+   viewports down to ~302px, so there is nothing to scroll. */
 
 .pt-play-topbar {
   display: grid;

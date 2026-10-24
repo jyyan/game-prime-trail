@@ -13,6 +13,13 @@ describe('InputModeToggle', () => {
     expect(direct.attributes('aria-pressed')).toBe('false');
   });
 
+  it('gives both buttons the stretch class so they split the row (GAME-27)', () => {
+    const wrapper = mount(InputModeToggle, { props: { modelValue: 'trail' } });
+    const buttons = wrapper.findAll('button[data-mode]');
+    expect(buttons).toHaveLength(2);
+    for (const b of buttons) expect(b.classes()).toContain('pt-mode-toggle__btn');
+  });
+
   it('emits update:modelValue when another mode is picked', async () => {
     const wrapper = mount(InputModeToggle, { props: { modelValue: 'trail' } });
     await wrapper.find('[data-mode="direct"]').trigger('click');
