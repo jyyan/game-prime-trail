@@ -1,12 +1,21 @@
 import { expect, test } from '@playwright/test';
-import { confirmDialog, confirmOk, fillByTrail, openPlay, pickOnHome, readRecords, waitReady } from './helpers';
+import {
+  confirmDialog,
+  confirmOk,
+  fillByTrail,
+  menuAction,
+  openPlay,
+  pickOnHome,
+  readRecords,
+  waitReady,
+} from './helpers';
 
 // Spec §12.3 scenario 4 / §7.4: viewing the solution marks the game assisted; an assisted win
 // counts in assistedClears but never sets a best, and home shows the hollow "assisted" mark.
 test('view solution: confirm, solution shown, assisted win recorded without best', async ({ page }) => {
   await openPlay(page, 1, 'easy');
 
-  await page.locator('[data-action="viewSolution"]').click();
+  await menuAction(page, 'viewSolution');
   await expect(confirmDialog(page)).toContainText('看過解答後，這局不列入最佳紀錄。');
   await confirmOk(page);
 

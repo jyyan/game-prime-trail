@@ -41,6 +41,13 @@ const cellAt = (wrapper: VueWrapper, cell: number) => wrapper.get(`.pt-board [da
 const winModal = (): HTMLElement | null =>
   q('.modal [data-action="nextRandom"]')?.closest<HTMLElement>('.modal') ?? null;
 
+/** Opens the action bar's "more" menu and picks `action` (spec §4.2). */
+async function menuAction(wrapper: VueWrapper, action: 'viewSolution' | 'exportPdf' | 'restart'): Promise<void> {
+  await wrapper.get('[data-action="more"]').trigger('click');
+  await flushPromises();
+  await wrapper.get(`[role="menu"] [data-action="${action}"]`).trigger('click');
+}
+
 async function click(el: HTMLElement | null | undefined): Promise<void> {
   expect(el).toBeTruthy();
   el!.click();
@@ -104,12 +111,86 @@ afterEach(() => {
 });
 
 describe('PlayView', () => {
-  it('renders the board, status bar and actions for /play/1/easy', async () => {
+  it('renders the top bar, board, status bar and actions for /play/1/easy', async () => {
     const wrapper = await mountAt('/play/1/easy');
     expect(wrapper.find('.pt-board').exists()).toBe(true);
-    expect(wrapper.find('.pt-status-bar').text()).toContain('#0001');
+    expect(wrapper.get('[data-level-title]').text()).toBe('地圖 #0001・簡單');
+    expect(wrapper.get('[data-timer]').text()).toBe('00:00');
+    expect(wrapper.get('[data-action="home"]').text()).toContain('首頁');
+    expect(wrapper.get('.pt-status-bar [data-steps]').text()).toBe('步數 0');
     expect(wrapper.find('.pt-play-actions').exists()).toBe(true);
     expect(wrapper.find('.pt-board [data-cell="19"]').text()).toBe('3');
+  });
+
+  it('focuses the board on mount so keys work at once', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    expect(document.activeElement).toBe(wrapper.get('.pt-board').element);
+  });
+
+  it('the top bar home button goes to / and keeps the move made just before', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await cellAt(wrapper, FIXTURE_PATH[3]).trigger('pointerdown');
+    await wrapper.get('[data-action="home"]').trigger('click');
+    await flushPromises();
+    expect(router!.currentRoute.value.fullPath).toBe('/');
+    // Left before the autosave debounce fired: unmounting flushes it.
+    const saved = JSON.parse(localStorage.getItem('prime-trail:v1:L1:progress') ?? '{}') as Record<
+      string,
+      { steps: number }
+    >;
+    expect(saved['1:easy']?.steps).toBe(1);
+  });
+
+  it('trail mode shows the next number and follows the head', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    // Easy gives 1 and the primes, so the head starts past 1; the next number skips nothing it shows.
+    const nextOf = () => Number(wrapper.get('[data-next-value]').text());
+    const first = nextOf();
+    await cellAt(wrapper, FIXTURE_PATH[first - 1]).trigger('pointerdown');
+    expect(cellAt(wrapper, FIXTURE_PATH[first - 1]).text()).toBe(String(first));
+    expect(nextOf()).toBeGreaterThan(first);
+    await wrapper.get('[data-action="undo"]').trigger('click');
+    expect(nextOf()).toBe(first);
+  });
+
+  it('direct mode shows the pending digits in the status bar: 1, 0, 0 reads 100', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('.btn-group button[data-mode="direct"]').trigger('click');
+    expect(wrapper.find('[data-next]').exists()).toBe(false);
+    expect(wrapper.find('.pt-number-pad [data-pending]').exists()).toBe(false);
+    const pending = () => wrapper.get('.pt-status-bar [data-pending]').text();
+    expect(pending()).toBe('');
+    await wrapper.get('.pt-number-pad [data-key="1"]').trigger('click');
+    expect(pending()).toBe('1');
+    await wrapper.get('.pt-number-pad [data-key="0"]').trigger('click');
+    await wrapper.get('.pt-number-pad [data-key="0"]').trigger('click');
+    expect(pending()).toBe('100');
+    expect(wrapper.get('[data-pending-box]').classes()).not.toContain('is-rejected');
+  });
+
+  it('a digit past 100 is refused but still gives feedback, from the pad and the keyboard', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('.btn-group button[data-mode="direct"]').trigger('click');
+    for (const d of ['1', '0', '0']) await wrapper.get(`.pt-number-pad [data-key="${d}"]`).trigger('click');
+    await wrapper.get('.pt-number-pad [data-key="5"]').trigger('click');
+    expect(wrapper.get('.pt-status-bar [data-pending]').text()).toBe('100');
+    expect(wrapper.get('[data-pending-box]').classes()).toContain('is-rejected');
+    expect(wrapper.find('[data-pending-rejected]').exists()).toBe(true);
+
+    await wrapper.get('.pt-number-pad [data-key="clear"]').trigger('click');
+    expect(wrapper.get('.pt-status-bar [data-pending]').text()).toBe('10');
+    // 101 is out of range too; this time the key comes from the keyboard on the board.
+    await wrapper.get('.pt-board').trigger('keydown', { key: '1' });
+    expect(wrapper.get('.pt-status-bar [data-pending]').text()).toBe('10');
+    expect(wrapper.get('[data-pending-box]').classes()).toContain('is-rejected');
+  });
+
+  it('an accepted digit does not flash the pending box', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('.btn-group button[data-mode="direct"]').trigger('click');
+    await wrapper.get('.pt-board').trigger('keydown', { key: '4' });
+    expect(wrapper.get('.pt-status-bar [data-pending]').text()).toBe('4');
+    expect(wrapper.get('[data-pending-box]').classes()).not.toContain('is-rejected');
   });
 
   it('shows the number pad only in direct mode', async () => {
@@ -121,22 +202,18 @@ describe('PlayView', () => {
     expect(wrapper.find('.pt-number-pad').exists()).toBe(false);
   });
 
-  it('the action bar mode button switches the input mode', async () => {
+  it('the action bar has no mode or clear button: InputModeToggle is the only mode switch', async () => {
     const wrapper = await mountAt('/play/1/easy');
-    expect(wrapper.get('[data-action="toggleMode"]').text()).toBe('改用指定模式');
-    await wrapper.get('[data-action="toggleMode"]').trigger('click');
-    expect(wrapper.find('.pt-number-pad').exists()).toBe(true);
-    expect(wrapper.get('.pt-play-actions').attributes('data-mode')).toBe('direct');
-    expect(wrapper.get('[data-action="toggleMode"]').text()).toBe('改用接續模式');
-    await wrapper.get('[data-action="toggleMode"]').trigger('click');
-    expect(wrapper.find('.pt-number-pad').exists()).toBe(false);
+    expect(wrapper.find('[data-action="toggleMode"]').exists()).toBe(false);
+    expect(wrapper.find('.pt-play-actions [data-action="clear"]').exists()).toBe(false);
+    expect(wrapper.findAll('.btn-group button[data-mode]')).toHaveLength(2);
   });
 
   it('a press on the board goes through the session', async () => {
     const wrapper = await mountAt('/play/1/easy');
     await cellAt(wrapper, FIXTURE_PATH[3]).trigger('pointerdown');
     expect(cellAt(wrapper, FIXTURE_PATH[3]).text()).toBe('4');
-    expect(wrapper.get('.pt-status-bar').text()).toContain('1');
+    expect(wrapper.get('.pt-status-bar [data-steps]').text()).toBe('步數 1');
     expect(wrapper.get('[data-action="undo"]').attributes('disabled')).toBeUndefined();
   });
 
@@ -156,15 +233,12 @@ describe('PlayView', () => {
     expect(cellAt(wrapper, 55).text()).toBe('');
   });
 
-  it('undo and clear take back the last cell; hint highlights the next one and marks assisted', async () => {
+  it('undo takes back the last cell; hint highlights the next one and marks assisted', async () => {
     const wrapper = await mountAt('/play/1/easy');
     await cellAt(wrapper, FIXTURE_PATH[3]).trigger('pointerdown');
     await wrapper.get('[data-action="undo"]').trigger('click');
     expect(cellAt(wrapper, FIXTURE_PATH[3]).text()).toBe('');
     expect(wrapper.get('[data-action="undo"]').attributes('disabled')).toBeDefined();
-    await cellAt(wrapper, FIXTURE_PATH[3]).trigger('pointerdown');
-    await wrapper.get('.pt-play-actions [data-action="clear"]').trigger('click');
-    expect(cellAt(wrapper, FIXTURE_PATH[3]).text()).toBe('');
     expect(wrapper.find('[data-assisted]').exists()).toBe(false);
     await wrapper.get('[data-action="hint"]').trigger('click');
     expect(cellAt(wrapper, FIXTURE_PATH[3]).classes()).toContain('is-highlight');
@@ -175,10 +249,10 @@ describe('PlayView', () => {
     const wrapper = await mountAt('/play/1/easy');
     await pressPath(wrapper, 6);
     expect(cellAt(wrapper, FIXTURE_PATH[5]).text()).toBe('6');
-    await wrapper.get('[data-action="restart"]').trigger('click');
+    await menuAction(wrapper, 'restart');
     await settleConfirm(false);
     expect(cellAt(wrapper, FIXTURE_PATH[5]).text()).toBe('6');
-    await wrapper.get('[data-action="restart"]').trigger('click');
+    await menuAction(wrapper, 'restart');
     await settleConfirm(true);
     expect(cellAt(wrapper, FIXTURE_PATH[5]).text()).toBe('');
     expect(cellAt(wrapper, FIXTURE_PATH[2]).text()).toBe('3'); // givens stay
@@ -186,7 +260,7 @@ describe('PlayView', () => {
 
   it('the view-solution action asks first, then opens the solution', async () => {
     const wrapper = await mountAt('/play/1/easy');
-    await wrapper.get('[data-action="viewSolution"]').trigger('click');
+    await menuAction(wrapper, 'viewSolution');
     await flushPromises();
     expect(useConfirm().pending.value?.message).toBe('看過解答後，這局不列入最佳紀錄。');
     useConfirm().pending.value!.settle(true);
@@ -197,7 +271,7 @@ describe('PlayView', () => {
 
   it('the PDF action opens the export dialog; a successful export closes it', async () => {
     const wrapper = await mountAt('/play/1/easy');
-    await wrapper.get('.pt-play-actions [data-action="exportPdf"]').trigger('click');
+    await menuAction(wrapper, 'exportPdf');
     await flushPromises();
     expect(q('[data-include-solution]')).not.toBeNull();
     await click(q('.modal [data-action="export"]'));
@@ -209,7 +283,7 @@ describe('PlayView', () => {
   it('a failed PDF export leaves the dialog open', async () => {
     pdfMock.exportPdf.mockResolvedValue(false);
     const wrapper = await mountAt('/play/1/easy');
-    await wrapper.get('.pt-play-actions [data-action="exportPdf"]').trigger('click');
+    await menuAction(wrapper, 'exportPdf');
     await flushPromises();
     await click(q('.modal [data-action="export"]'));
     expect(pdfMock.exportPdf).toHaveBeenCalledTimes(1);
@@ -220,7 +294,7 @@ describe('PlayView', () => {
     const wrapper = await mountAt('/play/1/easy');
     await cellAt(wrapper, FIXTURE_PATH[3]).trigger('pointerdown');
     expect(wrapper.find('[data-assisted]').exists()).toBe(false);
-    await wrapper.get('.pt-play-actions [data-action="exportPdf"]').trigger('click');
+    await menuAction(wrapper, 'exportPdf');
     await flushPromises();
     const box = q('[data-include-solution]') as HTMLInputElement;
     box.checked = true;
@@ -303,7 +377,7 @@ describe('PlayView: winning', () => {
     await pressPath(wrapper, 100);
     await click(winModal()!.querySelector<HTMLElement>('[data-action="nextRandom"]'));
     expect(router!.currentRoute.value.fullPath).toBe('/play/2/easy');
-    expect(wrapper.get('.pt-status-bar').text()).toContain('#0002');
+    expect(wrapper.get('[data-level-title]').text()).toContain('#0002');
     expect(winModal()).toBeNull();
   });
 

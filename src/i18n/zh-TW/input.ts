@@ -6,5 +6,4 @@ export const input = {
   digit: '數字 {n}',
   clear: '清除',
   confirm: '確認',
-  pending: '輸入中：{value}',
 } as const;

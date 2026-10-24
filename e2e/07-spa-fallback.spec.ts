@@ -10,7 +10,7 @@ test('spa fallback: deep link opens the board', async ({ page }, testInfo) => {
   expect(response?.status()).toBe(200);
   await expect(page).toHaveURL(new RegExp(`${DEEP_LINK}$`));
   await expect(page.locator('[data-view="play"] .pt-board')).toBeVisible();
-  await expect(page.locator('[data-summary]')).toContainText('#0500');
+  await expect(page.locator('[data-level-title]')).toContainText('#0500');
   if (testInfo.project.name === 'wrangler') {
     // The production build has no E2E hooks.
     expect(await page.evaluate(() => window.__primeTrail === undefined)).toBe(true);

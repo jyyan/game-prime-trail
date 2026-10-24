@@ -10,8 +10,9 @@ import InputModeToggle from '../components/input/InputModeToggle.vue';
 import NumberPad from '../components/input/NumberPad.vue';
 import BsModal from '../components/ui/BsModal.vue';
 import StatusBar from '../components/ui/StatusBar.vue';
+import { formatMs, padId } from '../components/format';
 import { usePlaySession } from '../composables/usePlaySession';
-import type { Difficulty, InputMode } from '../core/types';
+import { CELL_COUNT, type Difficulty, type InputMode } from '../core/types';
 import { t } from '../i18n';
 
 const props = defineProps<{ id: string; difficulty: Difficulty }>();
@@ -39,9 +40,46 @@ watch(shakeTarget, (target) => {
   if (target) board.value?.shake(target.cell);
 });
 
+// Focus the board once it is on screen so arrows and digits work straight away. GameBoard.focus()
+// asks for no focus ring: the ring is for keyboard navigation only (UI refresh spec §5.1).
+watch(board, (b) => b?.focus(), { flush: 'post' });
+
 const state = computed(() => game.value?.state ?? null);
 const won = computed(() => state.value?.status === 'won');
 const canUndo = computed(() => !won.value && (state.value?.undo.length ?? 0) > 0);
+
+const title = computed(() =>
+  state.value
+    ? `${t('status.level', { id: padId(state.value.levelId) })}・${t(`difficulty.${state.value.difficulty}`)}`
+    : '',
+);
+const elapsed = computed(() => formatMs(game.value?.elapsedMs.value ?? 0));
+/** Trail mode: the number the next cell gets (spec §4.3); null once the head is 100. */
+const next = computed(() => {
+  const head = game.value?.head.value ?? 0;
+  return head > 0 && head < CELL_COUNT ? head + 1 : null;
+});
+
+/** Bumped whenever a digit (pad or keyboard) is refused, so the status bar can flash (§4.3). */
+const rejectSeq = ref(0);
+
+function trackDigit(run: () => void): void {
+  const g = game.value;
+  const watched = g !== null && g.state.inputMode === 'direct' && g.state.status !== 'won';
+  const before = g?.state.pending;
+  run();
+  // An accepted digit always grows `pending`; an unchanged one was refused (it would leave 1–100).
+  if (watched && g.state.pending === before) rejectSeq.value++;
+}
+
+function onDigit(d: number): void {
+  trackDigit(() => session.onDigit(d));
+}
+
+function onBoardKey(e: KeyboardEvent): void {
+  if (/^[0-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) trackDigit(() => session.onKey(e));
+  else session.onKey(e);
+}
 
 function setInputMode(mode: InputMode): void {
   game.value?.setInputMode(mode);
@@ -66,6 +104,15 @@ function openPdf(): void {
       <RouterLink to="/" class="btn btn-outline-primary">{{ t('common.back') }}</RouterLink>
     </div>
     <template v-else-if="game && state && level">
+      <header class="pt-play-topbar" :aria-label="t('play.topBar')">
+        <RouterLink to="/" class="btn btn-outline-secondary pt-play-topbar__home" data-action="home" :aria-label="t('play.homeLabel')">
+          <span aria-hidden="true">←</span> {{ t('play.home') }}
+        </RouterLink>
+        <h1 class="pt-play-topbar__title" data-level-title>{{ title }}</h1>
+        <span class="pt-play-topbar__timer pt-num" role="timer" data-timer :aria-label="t('status.time', { time: elapsed })">{{
+          elapsed
+        }}</span>
+      </header>
       <div class="pt-play__board-wrap">
         <GameBoard
           ref="board"
@@ -79,36 +126,33 @@ function openPdf(): void {
           :readonly="won"
           @press="session.onPress"
           @drag="session.onDrag"
-          @key="session.onKey"
+          @key="onBoardKey"
         />
       </div>
       <div class="d-flex flex-column gap-2 mt-2">
         <StatusBar
-          :level-id="state.levelId"
-          :difficulty="state.difficulty"
-          :elapsed-ms="game.elapsedMs.value"
           :steps="state.steps"
           :assisted="state.assisted"
+          :mode="state.inputMode"
+          :next="next"
+          :pending="state.pending"
+          :reject-seq="rejectSeq"
         />
         <InputModeToggle :model-value="state.inputMode" @update:model-value="setInputMode" />
         <NumberPad
           v-if="state.inputMode === 'direct'"
           :disabled="won"
-          :pending="state.pending"
-          @digit="session.onDigit"
+          @digit="onDigit"
           @clear="session.onClear"
           @confirm="session.onConfirm"
         />
         <PlayActions
           :can-undo="canUndo"
-          :input-mode="state.inputMode"
           @undo="session.undo"
-          @clear="session.onClear"
           @hint="session.hint"
           @restart="session.requestRestart"
           @view-solution="session.requestViewSolution"
           @export-pdf="openPdf"
-          @update:input-mode="setInputMode"
         />
       </div>
 
@@ -146,5 +190,39 @@ function openPdf(): void {
 
 .pt-play__board-wrap {
   overflow-x: auto;
+}
+
+.pt-play-topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pt-play-topbar__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.pt-play-topbar__title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pt-play-topbar__timer {
+  min-width: 4.5ch;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pt-primary-strong);
+  text-align: end;
 }
 </style>

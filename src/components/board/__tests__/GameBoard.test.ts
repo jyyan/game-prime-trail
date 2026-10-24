@@ -391,4 +391,38 @@ describe('GameBoard keyboard and exposed methods', () => {
     (wrapper.vm as unknown as { focus(): void }).focus();
     expect(document.activeElement).toBe(wrapper.element);
   });
+
+  it('focus() asks for no focus ring and no scroll (ring is for keyboard navigation only)', () => {
+    const wrapper = mountBoard();
+    const spy = vi.spyOn(wrapper.element as HTMLElement, 'focus');
+    (wrapper.vm as unknown as { focus(): void }).focus();
+    expect(spy).toHaveBeenCalledWith({ preventScroll: true, focusVisible: false });
+  });
+
+  it('keyboard use on a quietly focused board turns the focus ring on', async () => {
+    const wrapper = mountBoard();
+    const el = wrapper.element as HTMLElement;
+    (wrapper.vm as unknown as { focus(): void }).focus();
+    const visible = vi.spyOn(el, 'matches').mockReturnValue(false);
+    const spy = vi.spyOn(el, 'focus');
+    await wrapper.trigger('keydown', { key: 'Shift' });
+    expect(spy).not.toHaveBeenCalled();
+    await wrapper.trigger('keydown', { key: 'ArrowUp' });
+    expect(spy).toHaveBeenCalledWith({ preventScroll: true, focusVisible: true });
+    expect(document.activeElement).toBe(el);
+    expect(wrapper.emitted('key')).toHaveLength(2);
+    // Already showing the ring: nothing to do.
+    spy.mockClear();
+    visible.mockReturnValue(true);
+    await wrapper.trigger('keydown', { key: 'ArrowDown' });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('a pointer press focuses the board without a focus ring', async () => {
+    const wrapper = mountBoard();
+    const spy = vi.spyOn(wrapper.element as HTMLElement, 'focus');
+    await wrapper.get('[data-cell="18"]').trigger('pointerdown');
+    expect(spy).toHaveBeenCalledWith({ preventScroll: true, focusVisible: false });
+    expect(document.activeElement).toBe(wrapper.element);
+  });
 });

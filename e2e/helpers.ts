@@ -143,3 +143,14 @@ export async function dismissToasts(page: Page): Promise<void> {
   const closers = page.locator('.toast .btn-close');
   while ((await closers.count()) > 0) await closers.first().click();
 }
+
+/** The play view's "more" menu (UI refresh spec §4.2). */
+export function moreMenu(page: Page): Locator {
+  return page.locator('[data-view="play"] [role="menu"][data-menu="more"]');
+}
+
+/** Opens the action bar's "more" menu and picks `action` (view solution, PDF or restart). */
+export async function menuAction(page: Page, action: 'viewSolution' | 'exportPdf' | 'restart'): Promise<void> {
+  await page.locator('[data-view="play"] [data-action="more"]').click();
+  await moreMenu(page).locator(`[data-action="${action}"]`).click();
+}
