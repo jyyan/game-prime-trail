@@ -7,6 +7,7 @@ import {
   fixtureGrid,
 } from '../../../core/__fixtures__/level-fixture';
 import { decodeLevel, derivePuzzle } from '../../../core/level-decode';
+import { conflictMap, findConflicts } from '../../../core/validate';
 import SolutionView from '../SolutionView.vue';
 
 const level = decodeLevel(FIXTURE_RECORD, 1);
@@ -58,6 +59,17 @@ describe('SolutionView', () => {
     const wrapper = mountView({ playerGrid: grid, solved: false });
     expect(wrapper.findAll('.is-conflict')).toHaveLength(0);
     await wrapper.get('[data-view="mine"]').trigger('click');
-    expect(wrapper.findAll('.is-conflict').length).toBeGreaterThan(0);
+    const marked = wrapper
+      .findAll('.is-conflict')
+      .map((cell) => Number(cell.attributes('data-cell')))
+      .sort((a, b) => a - b);
+    // Exactly the cells core/validate flags: both 4s (duplicate), the stray 4 also breaks
+    // 3 → 4 and 4 → 5 adjacency (so 3 and 5 turn red too) and sits on the wrong colour.
+    const expected = [...conflictMap(findConflicts(grid, puzzle)).keys()].sort((a, b) => a - b);
+    expect(expected).toEqual([FIXTURE_PATH[2], FIXTURE_PATH[3], FIXTURE_PATH[4], FIXTURE_PATH[50]].sort((a, b) => a - b));
+    expect(marked).toEqual(expected);
+    // A correct cell that is not involved stays clear.
+    expect(wrapper.get(`[data-cell="${FIXTURE_PATH[0]}"]`).classes()).not.toContain('is-conflict');
+    expect(wrapper.get(`[data-cell="${FIXTURE_PATH[9]}"]`).classes()).not.toContain('is-conflict');
   });
 });

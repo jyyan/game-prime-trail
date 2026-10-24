@@ -11,6 +11,13 @@ import { useRecords } from '../useRecords';
 import { __resetSettings, useSettings } from '../useSettings';
 import { useToast } from '../useToast';
 
+// The PDF pipeline (font fetch, jsPDF) has its own tests; here only the session's use of it matters.
+const pdfMock = vi.hoisted(() => ({ exportPdf: vi.fn<(...args: unknown[]) => Promise<boolean>>() }));
+vi.mock('../usePdfExport', async () => {
+  const { ref } = await import('vue');
+  return { usePdfExport: () => ({ busy: ref(false), exportPdf: pdfMock.exportPdf }) };
+});
+
 const level = decodeLevel(FIXTURE_RECORD, 1);
 const easyGivens = derivePuzzle(level, 'easy').givens;
 
@@ -30,6 +37,12 @@ async function makeSession(id = 1, d: Difficulty = 'easy'): Promise<Session> {
   const session = scope.run(() => usePlaySession(ref(id), ref(d)))!;
   await settle();
   return session;
+}
+
+/** R21: whatever `lastPlayed` points at must exist, or the home page offers a dead "continue". */
+function expectLastPlayedExists(): void {
+  const last = useProgress(1).lastPlayed();
+  if (last !== null) expect(useProgress(1).has(last.levelId, last.difficulty)).toBe(true);
 }
 
 function messages(): string[] {
@@ -78,12 +91,15 @@ beforeEach(() => {
   useLevelStore().__setLoader(async () => fixtureFile());
   for (const toast of [...useToast().toasts.value]) useToast().dismiss(toast.id);
   useConfirm().pending.value?.settle(false);
+  pdfMock.exportPdf.mockReset();
+  pdfMock.exportPdf.mockResolvedValue(true);
 });
 
 afterEach(() => {
   scope?.stop();
   scope = null;
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('usePlaySession: loading and restore', () => {
@@ -113,6 +129,11 @@ describe('usePlaySession: loading and restore', () => {
     expect(s.restored.value).toBe(false);
     expect(s.game.value!.state.steps).toBe(0);
     expect(useProgress(1).has(1, 'easy')).toBe(false);
+    expect(useProgress(1).lastPlayed()).toBeNull();
+    // The fresh board is not saved either.
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS * 2);
+    expect(useProgress(1).has(1, 'easy')).toBe(false);
+    expectLastPlayedExists();
   });
 
   it('new games take the input mode from settings', async () => {
@@ -152,6 +173,7 @@ describe('usePlaySession: trail input and autosave', () => {
     vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
     expect(useProgress(1).has(1, 'easy')).toBe(true);
     expect(useProgress(1).lastPlayed()).toMatchObject({ levelId: 1, difficulty: 'easy' });
+    expectLastPlayedExists();
   });
 
   it('pressing a non-adjacent cell shakes it and changes nothing', async () => {
@@ -325,6 +347,63 @@ describe('usePlaySession: win, records and errors', () => {
     expect(s.game.value!.state.status).toBe('idle');
     vi.advanceTimersByTime(SAVE_DEBOUNCE_MS * 2);
     expect(useProgress(1).has(1, 'easy')).toBe(false);
+    expect(useProgress(1).lastPlayed()).toBeNull();
+  });
+
+  it('restarting an assisted game does not write the idle board back (R21)', async () => {
+    const s = await makeSession();
+    trailTo(s, 10);
+    s.hint();
+    expect(s.game.value!.state.assisted).toBe(true);
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    expect(useProgress(1).has(1, 'easy')).toBe(true);
+    const pending = s.requestRestart();
+    await answerConfirm(true);
+    await pending;
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS * 2);
+    expect(s.game.value!.state.status).toBe('idle');
+    // reset() keeps assisted (spec §7.3), but the reset board is not saved.
+    expect(s.game.value!.state.assisted).toBe(true);
+    expect(useProgress(1).has(1, 'easy')).toBe(false);
+    expect(useProgress(1).lastPlayed()).toBeNull();
+    // Hints on the reset board change nothing worth saving either.
+    s.hint();
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS * 2);
+    expect(useProgress(1).has(1, 'easy')).toBe(false);
+    // The next move is a game in play again, and is saved with the assisted flag.
+    s.onPress(FIXTURE_PATH[3]);
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    expect(useProgress(1).has(1, 'easy')).toBe(true);
+    expect(useProgress(1).load(1, 'easy', s.game.value!.puzzle)?.assisted).toBe(true);
+    expectLastPlayedExists();
+  });
+
+  it('becoming assisted on an idle board is saved, so a reload keeps the flag', async () => {
+    const s = await makeSession();
+    // A restart of an unassisted game first: the reset alone must not block later saves.
+    trailTo(s, 6);
+    const pending = s.requestRestart();
+    await answerConfirm(true);
+    await pending;
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS * 2);
+    expect(useProgress(1).has(1, 'easy')).toBe(false);
+    const view = s.requestViewSolution();
+    await answerConfirm(true);
+    await view;
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    expect(s.game.value!.state.status).toBe('idle');
+    expect(useProgress(1).load(1, 'easy', s.game.value!.puzzle)?.assisted).toBe(true);
+    expectLastPlayedExists();
+    scope!.stop();
+    const again = await makeSession();
+    expect(again.restored.value).toBe(true);
+    expect(again.game.value!.state.assisted).toBe(true);
   });
 
   it('a full grid with errors says how many, once, and does not win', async () => {
@@ -343,7 +422,12 @@ describe('usePlaySession: win, records and errors', () => {
     expect(g.state.status).not.toBe('won');
     const errors = messages().filter((m) => m.startsWith('還有'));
     expect(errors).toEqual([`還有 ${g.conflicts.value.size} 格有錯`]);
-    // 98 → 99 is no longer adjacent, and 99/100 sit on the wrong colour: three red cells.
+    // n is the number of red cells (spec §8 "紅格已標"). Swapping 99 and 100 marks three:
+    // 98 → 99 is no longer adjacent, and 99/100 sit on the wrong colour. The plan's "2" counts
+    // only the swapped cells; see docs/backlog/drafts/GAME-16.md for the plan fix requested.
+    expect([...g.conflicts.value.keys()].sort((a, b) => a - b)).toEqual(
+      [FIXTURE_PATH[97], FIXTURE_PATH[98], FIXTURE_PATH[99]].sort((a, b) => a - b),
+    );
     expect(errors[0]).toBe('還有 3 格有錯');
     // Overwriting the same cell keeps the grid full: no second toast.
     s.onPress(FIXTURE_PATH[99]);
@@ -351,6 +435,75 @@ describe('usePlaySession: win, records and errors', () => {
     s.onKey(key('Enter'));
     await settle();
     expect(messages().filter((m) => m.startsWith('還有'))).toHaveLength(1);
+  });
+});
+
+describe('usePlaySession: next random', () => {
+  it('a one-map library resets the won, assisted game in place and saves nothing', async () => {
+    const s = await makeSession();
+    s.hint();
+    trailTo(s, 100);
+    await settle();
+    expect(s.game.value!.state.status).toBe('won');
+    expect(s.showWin.value).toBe(true);
+    expect(s.nextRandom()).toBeNull();
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS * 2);
+    expect(s.game.value!.state.status).toBe('idle');
+    expect(s.game.value!.state.steps).toBe(0);
+    expect(s.showWin.value).toBe(false);
+    expect(s.winResult.value).toBeNull();
+    expect(useProgress(1).has(1, 'easy')).toBe(false);
+    expect(useProgress(1).lastPlayed()).toBeNull();
+    expect(useRecords(1).get(1, 'easy')?.assistedClears).toBe(1);
+  });
+
+  it('with more maps, draws again until the id differs', async () => {
+    useLevelStore().__setLoader(async () => ({ ...fixtureFile(), count: 2, levels: [FIXTURE_RECORD, FIXTURE_RECORD] }));
+    const s = await makeSession();
+    const rand = vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValue(0.9);
+    expect(s.nextRandom()).toBe(2);
+    expect(rand).toHaveBeenCalledTimes(3);
+    // The current game is left alone; the route change starts the next one.
+    expect(s.game.value!.state.levelId).toBe(1);
+  });
+});
+
+describe('usePlaySession: PDF export and markAssisted', () => {
+  it('a successful export closes the dialog and passes the options through', async () => {
+    const s = await makeSession();
+    s.showPdf.value = true;
+    await s.exportPdf({ includeSolution: true });
+    expect(pdfMock.exportPdf).toHaveBeenCalledTimes(1);
+    expect(pdfMock.exportPdf).toHaveBeenCalledWith(s.level.value, 'easy', true);
+    expect(s.showPdf.value).toBe(false);
+  });
+
+  it('a failed export keeps the dialog open', async () => {
+    pdfMock.exportPdf.mockResolvedValue(false);
+    const s = await makeSession();
+    s.showPdf.value = true;
+    await s.exportPdf({ includeSolution: false });
+    expect(pdfMock.exportPdf).toHaveBeenCalledWith(s.level.value, 'easy', false);
+    expect(s.showPdf.value).toBe(true);
+  });
+
+  it('markAssisted (PDF with the solution mid-game) flags the game and the save', async () => {
+    const s = await makeSession();
+    trailTo(s, 6);
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    expect(useProgress(1).load(1, 'easy', s.game.value!.puzzle)?.assisted).toBe(false);
+    s.markAssisted();
+    expect(s.game.value!.state.assisted).toBe(true);
+    await settle();
+    vi.advanceTimersByTime(SAVE_DEBOUNCE_MS);
+    expect(useProgress(1).load(1, 'easy', s.game.value!.puzzle)?.assisted).toBe(true);
+    trailTo(s, 100, 7);
+    await settle();
+    const entry = useRecords(1).get(1, 'easy');
+    expect(entry?.assistedClears).toBe(1);
+    expect(entry?.bestMs).toBeNull();
   });
 });
 
@@ -385,6 +538,27 @@ describe('usePlaySession: lifecycle', () => {
     scope!.stop();
     scope = null;
     expect(useProgress(1).has(1, 'easy')).toBe(true);
+  });
+
+  it('pagehide writes a pending save at once', async () => {
+    const s = await makeSession();
+    s.onPress(FIXTURE_PATH[3]);
+    await settle();
+    expect(useProgress(1).has(1, 'easy')).toBe(false);
+    window.dispatchEvent(new Event('pagehide'));
+    expect(useProgress(1).has(1, 'easy')).toBe(true);
+    expectLastPlayedExists();
+  });
+
+  it('the pagehide listener is removed with the session', async () => {
+    const add = vi.spyOn(window, 'addEventListener');
+    const remove = vi.spyOn(window, 'removeEventListener');
+    await makeSession();
+    const added = add.mock.calls.find(([type]) => type === 'pagehide');
+    expect(added).toBeDefined();
+    scope!.stop();
+    scope = null;
+    expect(remove).toHaveBeenCalledWith('pagehide', added![1]);
   });
 
   it('switching difficulty loads that game instead', async () => {

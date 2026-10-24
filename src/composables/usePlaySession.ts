@@ -116,10 +116,18 @@ export function usePlaySession(
     saveTimer = null;
   }
 
-  // Idle games without assistance are not worth a save: a fresh or restarted board would
-  // otherwise re-create the entry "restart" just removed and point `lastPlayed` at nothing.
+  // True after a reset (restart, or "next random" on a one-map library) of a game that was
+  // already assisted. `reset()` keeps `assisted` (spec §7.3), so without this the idle board
+  // would look worth saving and re-create the entry the reset just removed (R21).
+  let resetWhileAssisted = false;
+
+  // Only a game in play, or an idle board that just became assisted (solution viewed, hint,
+  // PDF with solution before the first move), is worth a save. A fresh or reset board is
+  // not: saving it would point `lastPlayed` at an empty game. `assisted` only ever turns on,
+  // so an idle board reset while assisted stays unsaved until the next move.
   function shouldSave(g: Game): boolean {
-    return g.state.status === 'playing' || (g.state.status === 'idle' && g.state.assisted);
+    if (g.state.status === 'playing') return true;
+    return g.state.status === 'idle' && g.state.assisted && !resetWhileAssisted;
   }
 
   function saveNow(): void {
@@ -150,6 +158,7 @@ export function usePlaySession(
     progress = null;
     records = null;
     restored.value = false;
+    resetWhileAssisted = false;
     highlight.value = null;
     shakeTarget.value = null;
     winResult.value = null;
@@ -396,6 +405,7 @@ export function usePlaySession(
 
   function resetInPlace(g: Game): void {
     cancelSave();
+    resetWhileAssisted = g.state.assisted;
     g.reset();
     progress?.remove(g.state.levelId, g.state.difficulty);
     highlight.value = null;
