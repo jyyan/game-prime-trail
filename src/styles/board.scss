@@ -54,8 +54,22 @@ $pt-highlight: #ffc107;
   -webkit-user-select: none;
   color: #212529;
   background: $pt-cell-bg;
-  // Grid lines drawn per cell so the outer band stays clear.
-  box-shadow: inset 0 0 0 0.5px $pt-grid-line;
+  --pt-w-selected: 0px;
+  --pt-w-head: 0px;
+  --pt-w-highlight: 0px;
+  --pt-w-conflict: 0px;
+  --pt-r-head: calc(var(--pt-w-selected) + var(--pt-w-head));
+  --pt-r-highlight: calc(var(--pt-r-head) + var(--pt-w-highlight));
+  --pt-r-conflict: calc(var(--pt-r-highlight) + var(--pt-w-conflict));
+
+  // Earlier shadows paint on top; a ring with zero spread draws nothing. The last layer is the
+  // grid line, drawn per cell so the outer band stays clear.
+  box-shadow:
+    inset 0 0 0 var(--pt-w-selected) $pt-focus,
+    inset 0 0 0 var(--pt-r-head) #212529,
+    inset 0 0 0 var(--pt-r-highlight) $pt-highlight,
+    inset 0 0 0 var(--pt-r-conflict) $pt-conflict,
+    inset 0 0 0 0.5px $pt-grid-line;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,33 +89,28 @@ $pt-highlight: #ffc107;
     font-weight: 600;
   }
 
-  // Selected / head / highlight use border and fill, not colour alone (§9).
+  // Selected / head / highlight / conflict each draw their own inset ring (§9: never colour alone).
+  // Rings stack from the edge inwards in that order and each one only adds its width when its
+  // state is on, so any combination keeps every indicator visible (e.g. selected + conflict).
   &.is-selected {
-    box-shadow:
-      inset 0 0 0 3px $pt-focus,
-      inset 0 0 0 0.5px $pt-grid-line;
+    --pt-w-selected: 3px;
   }
 
   &.is-head {
-    box-shadow:
-      inset 0 0 0 3px #212529,
-      inset 0 0 0 0.5px $pt-grid-line;
+    --pt-w-head: 3px;
   }
 
   &.is-highlight {
-    box-shadow:
-      inset 0 0 0 3px $pt-highlight,
-      inset 0 0 0 0.5px $pt-grid-line;
+    --pt-w-highlight: 3px;
   }
 
   &.is-conflict {
+    --pt-w-conflict: 2px;
+
     color: $pt-conflict;
     text-decoration: underline;
     text-decoration-thickness: 2px;
     text-underline-offset: 2px;
-    box-shadow:
-      inset 0 0 0 2px $pt-conflict,
-      inset 0 0 0 0.5px $pt-grid-line;
   }
 
   &.is-shake {

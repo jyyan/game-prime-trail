@@ -30,6 +30,9 @@ const emit = defineEmits<{
 const boardEl = ref<HTMLElement | null>(null);
 const shakeCell = ref<Cell | null>(null);
 let shakeTimer: ReturnType<typeof setTimeout> | null = null;
+/** Bumped by every shake() and on unmount, so a stale nextTick callback does nothing. */
+let shakeSeq = 0;
+let unmounted = false;
 
 /** Active trail drag: the pointer that started it and the last cell reported. */
 let dragPointer: number | null = null;
@@ -111,22 +114,43 @@ function onPointerEnd(e: PointerEvent): void {
     endDrag();
     return;
   }
+  // While a trail drag is active, only its own pointer ends it (a second finger lifting does not).
   if (dragPointer !== null && (e.pointerId ?? 0) !== dragPointer) return;
-  if (endDrag()) emit('dragend');
+  endDrag();
+  // §6.1: every pointerup / pointercancel emits dragend, in both modes.
+  emit('dragend');
 }
 
 function onKeyDown(e: KeyboardEvent): void {
   if (props.readonly) return;
+  // §6.1: Enter on a focused cell is a press (e.g. a cell focused by assistive tech).
+  // Enter with focus on the board itself goes out as `key` (direct mode: confirm).
+  if (e.key === 'Enter' && e.target !== boardEl.value) {
+    const cell = cellFromElement(e.target as Element | null);
+    if (cell !== null) {
+      e.preventDefault();
+      emit('press', cell);
+      return;
+    }
+  }
   emit('key', e);
 }
 
-function shake(cell: Cell): void {
+function clearShakeTimer(): void {
   if (shakeTimer !== null) clearTimeout(shakeTimer);
   shakeTimer = null;
+}
+
+function shake(cell: Cell): void {
+  const seq = ++shakeSeq;
+  clearShakeTimer();
   shakeCell.value = null;
   // Let the class removal render and force a reflow so a repeated shake restarts the animation.
   void nextTick(() => {
+    // A later shake() or an unmount superseded this one.
+    if (seq !== shakeSeq || unmounted) return;
     void boardEl.value?.offsetWidth;
+    clearShakeTimer();
     shakeCell.value = cell;
     shakeTimer = setTimeout(() => {
       shakeCell.value = null;
@@ -140,7 +164,9 @@ function focus(): void {
 }
 
 onBeforeUnmount(() => {
-  if (shakeTimer !== null) clearTimeout(shakeTimer);
+  unmounted = true;
+  shakeSeq++;
+  clearShakeTimer();
 });
 
 defineExpose({ shake, focus });

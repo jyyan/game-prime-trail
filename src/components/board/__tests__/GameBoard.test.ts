@@ -225,6 +225,28 @@ describe('GameBoard pointer events', () => {
     expect(wrapper.emitted('dragend')).toEqual([[]]);
   });
 
+  it('direct mode: pointerup and pointercancel emit dragend', async () => {
+    const wrapper = mountBoard({ mode: 'direct' });
+    const board = wrapper.get('.pt-board');
+    await wrapper.get('[data-cell="18"]').trigger('pointerdown', { pointerId: 1 });
+    await board.trigger('pointerup', { pointerId: 1 });
+    await board.trigger('pointercancel', { pointerId: 1 });
+    expect(wrapper.emitted('dragend')).toEqual([[], []]);
+  });
+
+  it('trail drag: another pointer lifting does not end the drag', async () => {
+    const wrapper = mountBoard({ mode: 'trail' });
+    const board = wrapper.get('.pt-board');
+    await wrapper.get('[data-cell="18"]').trigger('pointerdown', { pointerId: 1 });
+    await board.trigger('pointerup', { pointerId: 2 });
+    expect(wrapper.emitted('dragend')).toBeUndefined();
+    pointAt(wrapper, 28);
+    await board.trigger('pointermove', { pointerId: 1 });
+    expect(wrapper.emitted('drag')).toEqual([[28]]);
+    await board.trigger('pointerup', { pointerId: 1 });
+    expect(wrapper.emitted('dragend')).toEqual([[]]);
+  });
+
   it('captures the pointer on the board when a trail drag starts', async () => {
     const wrapper = mountBoard({ mode: 'trail' });
     const el = wrapper.element as HTMLElement;
@@ -273,6 +295,34 @@ describe('GameBoard keyboard and exposed methods', () => {
     expect((emitted![0][0] as KeyboardEvent).key).toBe('ArrowUp');
   });
 
+  it('Enter on a focused cell emits press, not key', async () => {
+    const wrapper = mountBoard({ mode: 'direct' });
+    await wrapper.get('[data-cell="18"]').trigger('keydown', { key: 'Enter' });
+    expect(wrapper.emitted('press')).toEqual([[18]]);
+    expect(wrapper.emitted('key')).toBeUndefined();
+  });
+
+  it('Enter on the board itself emits key, not press', async () => {
+    const wrapper = mountBoard({ mode: 'direct' });
+    await wrapper.get('.pt-board').trigger('keydown', { key: 'Enter' });
+    expect(wrapper.emitted('press')).toBeUndefined();
+    expect(wrapper.emitted('key')).toHaveLength(1);
+  });
+
+  it('other keys on a focused cell still emit key', async () => {
+    const wrapper = mountBoard({ mode: 'direct' });
+    await wrapper.get('[data-cell="18"]').trigger('keydown', { key: '5' });
+    expect(wrapper.emitted('press')).toBeUndefined();
+    expect((wrapper.emitted('key')![0][0] as KeyboardEvent).key).toBe('5');
+  });
+
+  it('readonly: Enter on a cell emits nothing', async () => {
+    const wrapper = mountBoard({ readonly: true });
+    await wrapper.get('[data-cell="18"]').trigger('keydown', { key: 'Enter' });
+    expect(wrapper.emitted('press')).toBeUndefined();
+    expect(wrapper.emitted('key')).toBeUndefined();
+  });
+
   it('shake(cell) adds is-shake for 150 ms', async () => {
     const wrapper = mountBoard();
     (wrapper.vm as unknown as { shake(cell: Cell): void }).shake(18);
@@ -305,6 +355,35 @@ describe('GameBoard keyboard and exposed methods', () => {
     vi.advanceTimersByTime(50);
     await nextTick();
     expect(wrapper.findAll('.is-shake')).toHaveLength(0);
+  });
+
+  it('two shakes before the next tick keep the full 150 ms window', async () => {
+    const wrapper = mountBoard();
+    const vm = wrapper.vm as unknown as { shake(cell: Cell): void };
+    vm.shake(18);
+    vm.shake(28);
+    await nextTick();
+    await nextTick();
+    expect(wrapper.get('[data-cell="18"]').classes()).not.toContain('is-shake');
+    expect(wrapper.get('[data-cell="28"]').classes()).toContain('is-shake');
+    expect(vi.getTimerCount()).toBe(1);
+    vi.advanceTimersByTime(149);
+    await nextTick();
+    expect(wrapper.get('[data-cell="28"]').classes()).toContain('is-shake');
+    vi.advanceTimersByTime(1);
+    await nextTick();
+    expect(wrapper.findAll('.is-shake')).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('shake right before unmount leaves no timer behind', async () => {
+    const wrapper = mountBoard();
+    (wrapper.vm as unknown as { shake(cell: Cell): void }).shake(18);
+    wrappers.splice(wrappers.indexOf(wrapper), 1);
+    wrapper.unmount();
+    await nextTick();
+    await nextTick();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('focus() focuses the board element', () => {
