@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案
 
-game-prime-trail：網頁遊戲，玩法與目標玩家待第一份 spec 定義。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 npm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。專案骨架尚未建立（見 backlog R1），以下指令在骨架建好後生效：
+game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/2026-10-24-prime-trail-design.md`（草稿，待使用者確認）。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 npm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。專案骨架尚未建立（見 backlog R1），以下指令在骨架建好後生效：
 
 - `npm run dev`：Vite 開發伺服器
 - `npm run typecheck`：`vue-tsc --noEmit`
