@@ -1,0 +1,223 @@
+{
+  "spec": "docs/superpowers/specs/2026-10-24-prime-trail-design.md",
+  "plan": "docs/superpowers/plans/2026-10-24-prime-trail.md",
+  "layer": "C",
+  "base": "eb3d3154289ffbf6b7596b15d6bdc8bc7f39c906",
+  "setup": [
+    "pnpm install --frozen-lockfile"
+  ],
+  "dod": [
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm build"
+  ],
+  "tasks": [
+    {
+      "id": "C2",
+      "title": "棋盤元件（GameBoard／BoardCell／HeadMarker）與 board.scss（taskboard GAME-10；日誌與 backlog 草稿檔名用 GAME-10.md，不用 plan 寫的 drafts/C?.md）",
+      "files": [
+        "src/components/board/GameBoard.vue",
+        "src/components/board/BoardCell.vue",
+        "src/components/board/HeadMarker.vue",
+        "src/styles/board.scss",
+        "src/i18n/zh-TW/board.ts",
+        "src/i18n/zh-TW/conflict.ts",
+        "src/components/board/__tests__/BoardCell.test.ts",
+        "src/components/board/__tests__/GameBoard.test.ts",
+        "src/components/board/__tests__/HeadMarker.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-10.md",
+        "docs/backlog/drafts/GAME-10.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/core/types.ts",
+        "src/router.ts",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "src/core/**",
+        "src/composables/**",
+        "src/views/**",
+        "src/i18n/zh-TW/ 下除 board.ts、conflict.ts 以外的命名空間",
+        "src/i18n/zh-TW/index.ts",
+        "src/styles/main.scss"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/components/board/__tests__"
+      ],
+      "planSection": "### Task C2"
+    },
+    {
+      "id": "C3",
+      "title": "useGame 與 useTimer（taskboard GAME-11；日誌與 backlog 草稿檔名用 GAME-11.md，不用 plan 寫的 drafts/C?.md）",
+      "files": [
+        "src/composables/useGame.ts",
+        "src/composables/useTimer.ts",
+        "src/composables/__tests__/useTimer.test.ts",
+        "src/composables/__tests__/useGame.trail.test.ts",
+        "src/composables/__tests__/useGame.direct.test.ts",
+        "src/composables/__tests__/useGame.restore.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-11.md",
+        "docs/backlog/drafts/GAME-11.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/core/types.ts",
+        "src/router.ts",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "src/core/**",
+        "src/components/**",
+        "src/views/**",
+        "src/i18n/**",
+        "src/composables/ 下其他檔案"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/composables/__tests__/useTimer.test.ts src/composables/__tests__/useGame.trail.test.ts src/composables/__tests__/useGame.direct.test.ts src/composables/__tests__/useGame.restore.test.ts"
+      ],
+      "planSection": "### Task C3"
+    },
+    {
+      "id": "C4",
+      "title": "儲存層 composable（levelStore／records／progress／settings）（taskboard GAME-12；日誌與 backlog 草稿檔名用 GAME-12.md，不用 plan 寫的 drafts/C?.md）",
+      "files": [
+        "src/composables/storage.ts",
+        "src/composables/useLevelStore.ts",
+        "src/composables/useRecords.ts",
+        "src/composables/useProgress.ts",
+        "src/composables/useSettings.ts",
+        "src/composables/__tests__/storage.test.ts",
+        "src/composables/__tests__/useLevelStore.test.ts",
+        "src/composables/__tests__/useRecords.test.ts",
+        "src/composables/__tests__/useProgress.test.ts",
+        "src/composables/__tests__/useSettings.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-12.md",
+        "docs/backlog/drafts/GAME-12.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/core/types.ts",
+        "src/router.ts",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "src/core/**",
+        "src/components/**",
+        "src/views/**",
+        "src/i18n/**",
+        "src/data/**",
+        "src/composables/useGame.ts",
+        "src/composables/useTimer.ts",
+        "src/composables/useToast.ts",
+        "src/composables/useConfirm.ts",
+        "src/composables/usePdfExport.ts"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/composables/__tests__/storage.test.ts src/composables/__tests__/useLevelStore.test.ts src/composables/__tests__/useRecords.test.ts src/composables/__tests__/useProgress.test.ts src/composables/__tests__/useSettings.test.ts"
+      ],
+      "planSection": "### Task C4"
+    },
+    {
+      "id": "C5",
+      "title": "PDF 產生、字型子集與 usePdfExport（taskboard GAME-13；日誌與 backlog 草稿檔名用 GAME-13.md，不用 plan 寫的 drafts/C?.md）",
+      "files": [
+        "src/pdf/renderPuzzlePdf.ts",
+        "src/pdf/font-loader.ts",
+        "src/pdf/labels.ts",
+        "src/pdf/labels-en.ts",
+        "src/composables/usePdfExport.ts",
+        "scripts/gen-pdf-font.ts",
+        "public/fonts/pdf-zh.subset.ttf",
+        "public/fonts/OFL.txt",
+        "src/i18n/zh-TW/pdf.ts",
+        "src/pdf/__tests__/renderPuzzlePdf.test.ts",
+        "src/pdf/__tests__/pdf-font-coverage.test.ts",
+        "src/composables/__tests__/usePdfExport.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-13.md",
+        "docs/backlog/drafts/GAME-13.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/core/types.ts",
+        "src/router.ts",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "src/core/**",
+        "src/components/**",
+        "src/views/**",
+        "src/i18n/zh-TW/ 下除 pdf.ts 以外的命名空間",
+        "src/i18n/zh-TW/index.ts",
+        "src/composables/ 下除 usePdfExport.ts 以外的檔案",
+        "scripts/gen-levels.ts",
+        "scripts/gen-config.ts",
+        "scripts/lib/**"
+      ],
+      "acceptance": [
+        "pnpm gen:pdf-font",
+        "pnpm vitest run src/pdf/__tests__ src/composables/__tests__/usePdfExport.test.ts",
+        "ls -la public/fonts/pdf-zh.subset.ttf（期望 10–60 KB）"
+      ],
+      "planSection": "### Task C5"
+    },
+    {
+      "id": "C6",
+      "title": "純 props/emits 元件（NumberPad、InputModeToggle、StatusBar、LevelPicker、DifficultyPicker、WinModal、PdfExportDialog）（taskboard GAME-14；日誌與 backlog 草稿檔名用 GAME-14.md，不用 plan 寫的 drafts/C?.md）",
+      "files": [
+        "src/components/input/NumberPad.vue",
+        "src/components/input/InputModeToggle.vue",
+        "src/components/ui/StatusBar.vue",
+        "src/components/picker/LevelPicker.vue",
+        "src/components/picker/DifficultyPicker.vue",
+        "src/components/game/WinModal.vue",
+        "src/components/game/PdfExportDialog.vue",
+        "src/components/format.ts",
+        "src/i18n/zh-TW/input.ts",
+        "src/i18n/zh-TW/status.ts",
+        "src/i18n/zh-TW/picker.ts",
+        "src/i18n/zh-TW/win.ts",
+        "src/components/__tests__/NumberPad.test.ts",
+        "src/components/__tests__/InputModeToggle.test.ts",
+        "src/components/__tests__/StatusBar.test.ts",
+        "src/components/__tests__/LevelPicker.test.ts",
+        "src/components/__tests__/DifficultyPicker.test.ts",
+        "src/components/__tests__/WinModal.test.ts",
+        "src/components/__tests__/PdfExportDialog.test.ts",
+        "src/components/__tests__/format.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-14.md",
+        "docs/backlog/drafts/GAME-14.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/core/types.ts",
+        "src/router.ts",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "src/core/**",
+        "src/composables/**（只能 import useConfirm）",
+        "src/components/board/**",
+        "src/components/ui/Bs*.vue",
+        "src/views/**",
+        "src/i18n/zh-TW/ 下除 input/status/picker/win 以外的命名空間",
+        "src/i18n/zh-TW/index.ts"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/components/__tests__"
+      ],
+      "planSection": "### Task C6"
+    }
+  ],
+  "models": {
+    "implement": "opus",
+    "verify": "haiku",
+    "review": "sonnet",
+    "fix": "opus"
+  }
+}
