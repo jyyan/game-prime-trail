@@ -152,6 +152,51 @@ describe('BsModal', () => {
     expect(outer.emitted('update:modelValue')).toEqual([[false]]);
   });
 
+  it('stacks by opening order even when mounted in the opposite order', async () => {
+    // Mounted first (like the app-level confirm host), opened last.
+    const early = mountModal({ title: 'Early' });
+    const late = mountModal({ title: 'Late' });
+    await late.setProps({ modelValue: true });
+    await early.setProps({ modelValue: true });
+
+    const zOf = (selector: string, index: number) =>
+      Number(document.body.querySelectorAll<HTMLElement>(selector)[index]!.style.zIndex);
+    const modals = document.body.querySelectorAll('.modal');
+    // Teleport keeps mount order in the DOM, so the later-opened modal comes first.
+    expect(modals[0]!.querySelector('.modal-title')?.textContent).toBe('Early');
+    expect(modals[1]!.querySelector('.modal-title')?.textContent).toBe('Late');
+
+    const earlyModal = zOf('.modal', 0);
+    const earlyBackdrop = zOf('.modal-backdrop', 0);
+    const lateModal = zOf('.modal', 1);
+    const lateBackdrop = zOf('.modal-backdrop', 1);
+    expect(lateBackdrop).toBeLessThan(lateModal);
+    expect(lateModal).toBeLessThan(earlyBackdrop);
+    expect(earlyBackdrop).toBeLessThan(earlyModal);
+
+    pressEscape();
+    expect(early.emitted('update:modelValue')).toEqual([[false]]);
+    expect(late.emitted('update:modelValue')).toBeUndefined();
+  });
+
+  it('opens above the current top after a lower modal has closed', async () => {
+    const a = mountModal({ title: 'A' });
+    const b = mountModal({ title: 'B' });
+    const c = mountModal({ title: 'C' });
+    await a.setProps({ modelValue: true });
+    await b.setProps({ modelValue: true });
+    await a.setProps({ modelValue: false });
+    await c.setProps({ modelValue: true });
+
+    const zByTitle = (title: string) =>
+      Number(
+        [...document.body.querySelectorAll<HTMLElement>('.modal')].find(
+          (modal) => modal.querySelector('.modal-title')?.textContent === title,
+        )!.style.zIndex,
+      );
+    expect(zByTitle('C')).toBeGreaterThan(zByTitle('B'));
+  });
+
   it('cleans up body state when unmounted while open', async () => {
     const wrapper = mountModal({ modelValue: true });
     await nextTick();

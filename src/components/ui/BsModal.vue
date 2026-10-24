@@ -1,7 +1,13 @@
 <script lang="ts">
-// Open modals, innermost last. Shared across instances so that only the top
-// modal reacts to Esc and `modal-open` stays on <body> while any is open.
-const openStack: symbol[] = [];
+// Open modals in opening order, top-most last. Shared across instances so that
+// only the top modal reacts to Esc, stacks visually above the others regardless
+// of DOM (mount) order, and `modal-open` stays on <body> while any is open.
+const openStack: { token: symbol; layer: number }[] = [];
+
+// Bootstrap's --bs-backdrop-zindex / --bs-modal-zindex; each layer adds a step.
+const BACKDROP_Z = 1050;
+const MODAL_Z = 1055;
+const LAYER_STEP = 10;
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
@@ -31,18 +37,25 @@ const emit = defineEmits<{
 const token = Symbol('modal');
 const titleId = `pt-modal-title-${useId()}`;
 const dialogEl = ref<HTMLElement | null>(null);
+const layer = ref(0);
 let returnFocusTo: HTMLElement | null = null;
 let isOpen = false;
 
 const ariaLabelledBy = computed(() => props.labelledBy ?? (props.title ? titleId : undefined));
 const dialogClass = computed(() => (props.size ? `modal-${props.size}` : undefined));
+const modalStyle = computed(() => ({ zIndex: MODAL_Z + layer.value * LAYER_STEP }));
+const backdropStyle = computed(() => ({ zIndex: BACKDROP_Z + layer.value * LAYER_STEP }));
+
+function isTop(): boolean {
+  return openStack[openStack.length - 1]?.token === token;
+}
 
 function requestClose(): void {
   emit('update:modelValue', false);
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  if (event.key !== 'Escape' || openStack[openStack.length - 1] !== token) return;
+  if (event.key !== 'Escape' || !isTop()) return;
   event.preventDefault();
   requestClose();
 }
@@ -62,7 +75,10 @@ async function open(): Promise<void> {
   isOpen = true;
   const active = document.activeElement;
   returnFocusTo = active instanceof HTMLElement && active !== document.body ? active : null;
-  openStack.push(token);
+  // One layer above whatever is currently on top, so a modal opened later always
+  // covers earlier ones even if it was mounted (and teleported) before them.
+  layer.value = (openStack[openStack.length - 1]?.layer ?? -1) + 1;
+  openStack.push({ token, layer: layer.value });
   syncBodyClass();
   document.addEventListener('keydown', onKeydown);
   await nextTick();
@@ -76,7 +92,7 @@ async function open(): Promise<void> {
 function teardown(): boolean {
   if (!isOpen) return false;
   isOpen = false;
-  const index = openStack.indexOf(token);
+  const index = openStack.findIndex((entry) => entry.token === token);
   if (index !== -1) openStack.splice(index, 1);
   syncBodyClass();
   document.removeEventListener('keydown', onKeydown);
@@ -112,6 +128,7 @@ onBeforeUnmount(() => {
         role="dialog"
         aria-modal="true"
         :aria-labelledby="ariaLabelledBy"
+        :style="modalStyle"
         @click="onBackdrop"
       >
         <div ref="dialogEl" class="modal-dialog modal-dialog-centered" :class="dialogClass" tabindex="-1">
@@ -129,7 +146,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-      <div class="modal-backdrop show" @click="onBackdrop" />
+      <div class="modal-backdrop show" :style="backdropStyle" @click="onBackdrop" />
     </template>
   </Teleport>
 </template>
