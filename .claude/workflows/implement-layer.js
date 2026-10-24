@@ -15,6 +15,11 @@ const a = args || {}
 for (const k of ['spec', 'plan', 'layer', 'base', 'dod', 'tasks']) {
   if (a[k] === undefined || a[k] === null) throw new Error(`args.${k} is required`)
 }
+// 空 DoD 等於略過閘門；內容須逐字照抄 CLAUDE.md「完成定義」
+if (!Array.isArray(a.dod) || a.dod.length === 0) throw new Error('args.dod must be a non-empty array')
+// 新 worktree 沒有依賴，setup 在實作、驗證、修正前各跑一次；不需安裝的 repo 傳 []
+if (a.setup !== undefined && !Array.isArray(a.setup)) throw new Error('args.setup must be an array')
+const setup = a.setup || []
 if (!Array.isArray(a.tasks) || a.tasks.length === 0) throw new Error('args.tasks must be a non-empty array')
 for (const t of a.tasks) {
   for (const k of ['id', 'title', 'files', 'acceptance', 'planSection']) {
@@ -55,6 +60,7 @@ const REVIEW = {
 
 // ---- prompt 組裝：欄位順序與 docs/superpowers/dispatch-prompt.md 一致 ----
 const list = (xs) => (xs && xs.length ? xs.map((x) => `- ${x}`).join('\n') : '- （無）')
+const setupStep = setup.length ? `切到正確的 commit 後，先逐條執行安裝指令（新 worktree 沒有依賴），失敗就停下回報：\n${list(setup)}` : null
 function dispatchPrompt(t) {
   return [
     '你在獨立的 git worktree 內實作一個任務，只做這個任務，做完回報。',
@@ -62,19 +68,21 @@ function dispatchPrompt(t) {
     `   - spec：${a.spec}`,
     `   - plan：${a.plan} 的 ${t.planSection}（先讀這段，再讀 spec 中它引用的章節）`,
     `2. 基底：先執行 git merge --ff-only ${a.base}，再執行 git rev-parse HEAD 並寫進回報；若 HEAD 不等於 ${a.base}，執行 git checkout --detach ${a.base} 後再建分支。在分支 ${branchOf(t)} 上工作（git checkout -B ${branchOf(t)}）。`,
+    setupStep && `   ${setupStep}`,
     `3. 可動檔案：\n${list(t.files)}\n   禁區：\n${list(t.forbidden)}\n   碰到禁區就停下回報。`,
     '4. 本 repo 慣例：以 CLAUDE.md 為準，特別是「完成定義」與「開發流程規範」兩段。',
     `5. 驗收：逐條執行並貼輸出尾段：\n   任務驗收：\n${list(t.acceptance)}\n   DoD：\n${list(a.dod)}`,
     '6. 回報格式：分支與 commit hash（commit 後執行 git checkout --detach 釋放分支）、改動檔案清單、新增測試案例數與檔名、每條驗收與 DoD 指令的輸出尾段、沒做的事與原因。不得宣稱未執行的結果；跑不動就寫跑不動與錯誤訊息。status 只有在所有驗收與 DoD 都實際通過時才填 done。',
-  ].join('\n')
+  ].filter(Boolean).join('\n')
 }
 function verifyPrompt(t, impl) {
   return [
     `你是獨立驗證者。不要相信前一個 agent 的回報，自己重跑。`,
     `執行 git checkout --detach ${impl.commit}（分支 ${impl.branch} 可能仍被實作 worktree 佔用，所以用 commit 切換），確認 git rev-parse HEAD 以 ${impl.commit.slice(0, 7)} 開頭。`,
+    setupStep,
     `逐條執行以下指令並貼輸出尾段：\n任務驗收：\n${list(t.acceptance)}\nDoD：\n${list(a.dod)}`,
-    '任何一條非零結束或輸出顯示失敗，pass 為 false，failures 列出指令與關鍵錯誤行。不得修改任何檔案。',
-  ].join('\n')
+    '任何一條非零結束或輸出顯示失敗，pass 為 false，failures 列出指令與關鍵錯誤行。除了安裝指令產生的依賴目錄，不得修改任何檔案。',
+  ].filter(Boolean).join('\n')
 }
 const LENSES = [
   { key: 'correctness', text: '正確性：邏輯是否有錯、邊界與錯誤路徑是否處理；找得到具體錯誤才反對。' },
@@ -93,11 +101,12 @@ function reviewPrompt(t, impl, lens) {
 function fixPrompt(t, impl, problems) {
   return [
     `你要修正任務 ${t.id} ${t.title} 的分支 ${impl.branch}。先 git checkout ${impl.branch}；若回報分支已被其他 worktree 佔用，改 git checkout --detach ${impl.commit}，修改並 commit 後 git branch -f ${impl.branch} HEAD。`,
+    setupStep,
     `必須處理的問題：\n${list(problems)}`,
     `只動可動檔案：\n${list(t.files)}\n禁區：\n${list(t.forbidden)}`,
     `修完逐條執行並貼輸出尾段：\n${list(t.acceptance)}\n${list(a.dod)}`,
     'commit 到同一分支後 git checkout --detach。回報格式同實作任務；不得宣稱未執行的結果。',
-  ].join('\n')
+  ].filter(Boolean).join('\n')
 }
 
 // ---- 一個任務的完整生命週期 ----

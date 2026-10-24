@@ -69,17 +69,21 @@
   "plan": "docs/superpowers/plans/YYYY-MM-DD-xxx.md",
   "layer": "A",
   "base": "<git rev-parse <主分支> 的輸出>",
-  "dod": ["npm run typecheck", "npm test", "npm run build"],
+  "setup": ["pnpm install --frozen-lockfile"],
+  "dod": ["pnpm typecheck", "pnpm test", "pnpm build"],
   "tasks": [
     {
       "id": "A1",
       "title": "任務名稱",
       "files": ["src/a.ts", "src/__tests__/a.test.ts"],
       "forbidden": ["migrations/"],
-      "acceptance": ["npx vitest run src/__tests__/a.test.ts"],
+      "acceptance": ["pnpm vitest run src/__tests__/a.test.ts"],
       "planSection": "### Task A1"
     }
   ],
   "models": {"implement": "sonnet", "verify": "haiku", "review": "haiku", "fix": "sonnet"}
 }
 ```
+
+- `dod`：必填、不得為空陣列，逐字照抄 CLAUDE.md「完成定義」的指令鏈；兩邊不一致時以 CLAUDE.md 為準並先修正 args。
+- `setup`：選填，新 worktree 的依賴安裝指令；workflow 在實作、驗證、修正三個 agent 切到正確 commit 後各跑一次。不需安裝依賴的 repo 傳 `[]` 或省略。
