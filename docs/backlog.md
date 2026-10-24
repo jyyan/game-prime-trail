@@ -32,6 +32,10 @@
 - **R25 子集字型 `name` 表仍寫 `Noto Sans TC Thin`**【整潔・低】：可變字型預設 instance 是 wght=100，harfbuzz 釘 400 時只改外框與 `usWeightClass`。jsPDF 以自訂 family 引用、不影響輸出；要乾淨可改寫 name 表或改用靜態 Regular 來源。來源 GAME-13。
 - **R26 spec §6.9 與 PDF 實作介面不一致**【文件・低】：spec 寫 `renderPuzzlePdf({ level, difficulty, includeSolution })`、英文 fallback 在 `en.ts`；實作依 plan C5 為 `{ level, difficulty, includeSolution, labels, font }`、英文標籤在 `src/pdf/labels-en.ts`，i18n `pdf` 新增 `docTitle`、`exportFailed`。spec 該段可同步。來源 GAME-13。
 - **R27 C5 測試強度不足**【測試・中】：layer-C 審查指出：`usePdfExport` 沒有成功路徑（字型可用、走中文標籤、不跳 fallback toast）的案例；格子灰階斷言會被圖例的 `setFillColor` 滿足；解答頁未驗路徑順序與折線；龍頭三角形只數次數不驗方位；字型嵌入只驗 `%PDF-` 檔頭與大小。D1 接 PDF 前補較穩。來源 GAME-13。
+- **R28 `BsConfirmHost` 按鈕預設英文**【UI・低】：`okLabel`／`cancelLabel` 未給時顯示 `OK`／`Cancel`；D1 其他 `confirm()` 呼叫端（重新開始、看解答）要記得傳 `common.*`，或改由 BsConfirmHost 預設走 i18n。來源 GAME-14。
+- **R29 PDF 對話框對已 assisted 的局仍會確認**【UI・低】：plan 介面 `PdfExportDialog` 只有 `{ modelValue, gameStatus }`，已輔助的局勾「附解答頁」仍跳確認並再 emit `markAssisted`（冪等、多問一次）；若要依 §7.4「已 assisted 不再問」，需先改 plan 介面加 `assisted` prop。來源 GAME-14。
+- **R30 LevelPicker 空白欄位即顯示錯誤**【UI・低】：依 plan 字面，首頁初次載入欄位空白就顯示 `picker.invalidId`；若希望空白時只停用不提示，需先改 plan／spec。來源 GAME-14。
+- **R31 LevelPicker 有效 id 按 Enter 的路徑沒測**【測試・低】：只測了無效 id 按 Enter 不 emit；刪掉 `@keydown.enter` 測試仍會過。layer-C 審查建議。來源 GAME-14。
 
 ## 已結
 

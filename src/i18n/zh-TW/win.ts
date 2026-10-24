@@ -3,6 +3,8 @@ export const win = {
   titleAssisted: '輔助完成',
   time: '時間 {time}',
   steps: '步數 {n}',
+  bestTime: '最快紀錄 {time}',
+  bestSteps: '最少步數 {n}',
   newBestTime: '新的最快紀錄',
   newBestSteps: '新的最少步數',
   notRecorded: '本局不列入最佳紀錄',
