@@ -1,8 +1,9 @@
 export const win = {
   title: '過關！',
   titleAssisted: '輔助完成',
-  time: '時間 {time}',
-  steps: '步數 {n}',
+  illustrationAlt: '小龍舉手歡呼，身旁有獎盃和彩帶',
+  timeLabel: '時間',
+  stepsLabel: '步數',
   bestTime: '最快紀錄 {time}',
   bestSteps: '最少步數 {n}',
   newBestTime: '新的最快紀錄',
