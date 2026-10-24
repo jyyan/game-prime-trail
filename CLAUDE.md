@@ -57,7 +57,7 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 
 1. **不經確認不寫碼**。
 2. **不跑完 DoD 不回報**：回報必附實際指令輸出的尾段與「沒做的事」；不得回報未執行過的結果。
-3. **主 session 不審 diff 不合併**：agent 不碰主分支、不 push。
+3. **主 session 不審 diff 不合併**：agent 不碰主分支、不 push。`.claude/settings.json` 以 `permissions.deny` 擋下 `git push`；要 push 由人在終端機自己執行。
 
 
 ## 完成定義（DoD）
