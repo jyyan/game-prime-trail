@@ -30,9 +30,45 @@ export interface MetaRow {
   nodes: { easy: number; adv: number; chal: number };
   ms: number;
   generator: string;
+  /** Every parameter the row depends on, so stale rows are detected even if `generator` was not bumped. */
+  config: RowConfig;
 }
 
 export type RecomputeField = 'h' | 'c';
+
+/** Parameters that decide the path set and the easy filter, i.e. which candidates exist. */
+const PATH_KEYS = [
+  'masterSeed',
+  'backbiteSteps',
+  'edgeExtraMax',
+  'easyBudget',
+  'candidates',
+  'maxAttemptsPerLevel',
+] as const;
+/** Parameters of the challenge count, which decides the pick among candidates (§4.6). */
+const CHAL_KEYS = ['challengeCap', 'challengeBudget'] as const;
+/** Parameters of the greedy hint search (§4.5). */
+const ADV_KEYS = ['advBudget', 'advFloor', 'advRestarts'] as const;
+
+export type RowConfig = Pick<
+  GenConfig,
+  (typeof PATH_KEYS)[number] | (typeof CHAL_KEYS)[number] | (typeof ADV_KEYS)[number]
+>;
+
+export function rowConfigOf(cfg: GenConfig): RowConfig {
+  const out: Partial<Record<keyof RowConfig, string | number>> = {};
+  for (const key of [...PATH_KEYS, ...CHAL_KEYS, ...ADV_KEYS]) out[key] = cfg[key];
+  return out as RowConfig;
+}
+
+/** True when the row was produced with exactly these parameters and generator string. */
+export function isRowCurrent(row: MetaRow, cfg: GenConfig): boolean {
+  const want = rowConfigOf(cfg);
+  return (
+    row.generator === cfg.generator &&
+    (Object.keys(want) as (keyof RowConfig)[]).every((key) => row.config?.[key] === want[key])
+  );
+}
 
 type PathConfig = Pick<GenConfig, 'backbiteSteps' | 'edgeExtraMax'>;
 type ChallengeConfig = Pick<GenConfig, 'challengeCap' | 'challengeBudget'>;
@@ -127,12 +163,28 @@ export function generateLevel(id: number, cfg: GenConfig): MetaRow {
     attempt++;
   }
 
-  // Smallest c wins, null ranks last; candidates are in attempt order so ties keep the earliest.
+  const chosen = pickCandidate(candidates);
+  const greedy = greedySearch(chosen.level, chosen.rng, cfg);
+  return buildRow(id, candidates, chosen, greedy, easyNodes, t0, cfg);
+}
+
+/** §4.6: smallest c wins, null ranks last; candidates are in attempt order so ties keep the earliest. */
+function pickCandidate(candidates: readonly Candidate[]): Candidate {
   const rank = (c: number | null): number => c ?? Number.POSITIVE_INFINITY;
   let chosen = candidates[0];
   for (const cand of candidates) if (rank(cand.c) < rank(chosen.c)) chosen = cand;
+  return chosen;
+}
 
-  const greedy = greedySearch(chosen.level, chosen.rng, cfg);
+function buildRow(
+  id: number,
+  candidates: readonly Candidate[],
+  chosen: Candidate,
+  greedy: { mask: number; nodes: number },
+  easyNodes: number,
+  t0: number,
+  cfg: GenConfig,
+): MetaRow {
   return {
     id,
     attempt: chosen.attempt,
@@ -155,37 +207,61 @@ export function generateLevel(id: number, cfg: GenConfig): MetaRow {
     },
     ms: Math.round(performance.now() - t0),
     generator: cfg.generator,
+    config: rowConfigOf(cfg),
   };
 }
 
 /**
- * `--recompute`: redo `h` and/or `c` for an existing row with the current budgets, keeping its path
- * and seed. The path is rebuilt from `seed` (which also restores the greedy rng state). Candidate
- * selection is not redone: changing `candidates` needs a full regeneration.
+ * `--recompute`: bring an existing row up to the current budgets without redoing the easy checks, with
+ * the same result as `generateLevel(row.id, cfg)` (spec §4.3: same generator + masterSeed, same file).
+ * - `c`: recounts every recorded candidate (rebuilt from its seed) and re-picks; when the pick moves to
+ *   another candidate, the greedy search runs again for it.
+ * - `h`: reruns the greedy search with the chosen candidate's rng (rebuilding the path restores it).
+ * Parameters outside the requested stages must equal the row's `config`, otherwise the row would not
+ * match a fresh run; that throws and the id needs a full regeneration.
  */
 export function recomputeRow(row: MetaRow, fields: readonly RecomputeField[], cfg: GenConfig): MetaRow {
   const t0 = performance.now();
-  const built = pathForSeed(row.seed, cfg);
-  if (!built || built.path[0] !== row.s || encodePath(built.path) !== row.p) {
-    throw new Error(`level ${row.id}: seed ${row.seed} no longer reproduces its path`);
-  }
-  const level = levelOfPath(row.id, built.path, row.seed);
-  const next: MetaRow = { ...row, nodes: { ...row.nodes }, candidates: [...row.candidates] };
-  if (fields.includes('c')) {
-    const chal = challengeCount(level, cfg);
-    next.c = chal.c;
-    next.nodes.chal = chal.nodes;
-    next.candidates = next.candidates.map((cand) =>
-      cand.attempt === row.attempt ? { ...cand, c: chal.c, nodes: chal.nodes } : cand,
+  const fixed: (keyof RowConfig)[] = [
+    ...PATH_KEYS,
+    ...(fields.includes('c') ? [] : CHAL_KEYS),
+    ...(fields.includes('h') ? [] : ADV_KEYS),
+  ];
+  const drift = fixed.filter((key) => row.config?.[key] !== cfg[key]);
+  if (drift.length > 0) {
+    throw new Error(
+      `level ${row.id}: ${drift.join(', ')} differ from the row's config; regenerate it instead of --recompute`,
     );
   }
-  if (fields.includes('h')) {
-    const greedy = greedySearch(level, built.rng, cfg);
-    next.h = greedy.mask;
-    next.hintCount = popcount(greedy.mask);
-    next.nodes.adv = greedy.nodes;
+
+  const candidates: Candidate[] = row.candidates.map((meta) => {
+    const built = meta.seed === levelSeed(cfg.masterSeed, row.id, meta.attempt) ? pathForSeed(meta.seed, cfg) : null;
+    if (!built) throw new Error(`level ${row.id}: candidate attempt ${meta.attempt} cannot be rebuilt`);
+    return {
+      attempt: meta.attempt,
+      seed: meta.seed,
+      level: levelOfPath(row.id, built.path, meta.seed),
+      rng: built.rng,
+      c: meta.c,
+      chalNodes: meta.nodes,
+    };
+  });
+  const previous = candidates.find((cand) => cand.attempt === row.attempt);
+  if (!previous || previous.level.start !== row.s || encodePath(previous.level.path) !== row.p) {
+    throw new Error(`level ${row.id}: seed ${row.seed} no longer reproduces its path`);
   }
-  next.ms = Math.round(performance.now() - t0);
-  next.generator = cfg.generator;
-  return next;
+
+  if (fields.includes('c')) {
+    for (const cand of candidates) {
+      const chal = challengeCount(cand.level, cfg);
+      cand.c = chal.c;
+      cand.chalNodes = chal.nodes;
+    }
+  }
+  const chosen = pickCandidate(candidates);
+  const greedy =
+    fields.includes('h') || chosen !== previous
+      ? greedySearch(chosen.level, chosen.rng, cfg)
+      : { mask: row.h, nodes: row.nodes.adv };
+  return buildRow(row.id, candidates, chosen, greedy, row.nodes.easy, t0, cfg);
 }

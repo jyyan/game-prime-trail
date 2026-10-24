@@ -9,7 +9,7 @@ import {
 } from '../../src/core/__fixtures__/level-fixture';
 import { GEN_CONFIG } from '../gen-config';
 import { assemble, sha256Hex, verifyLevelFile, writeLevelFiles } from '../lib/assemble';
-import type { MetaRow } from '../lib/gen-level';
+import { rowConfigOf, type MetaRow } from '../lib/gen-level';
 
 const cfg = { ...GEN_CONFIG, count: 3 };
 
@@ -27,6 +27,7 @@ function rows(ids: number[]): Map<number, MetaRow> {
         nodes: { easy: 0, adv: 0, chal: 0 },
         ms: 0,
         generator: GEN_CONFIG.generator,
+        config: rowConfigOf(GEN_CONFIG),
       },
     ]),
   );

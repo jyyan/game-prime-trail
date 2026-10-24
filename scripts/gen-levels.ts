@@ -12,7 +12,7 @@ import type { LevelFile } from '../src/core/types';
 import { GEN_CONFIG, type GenConfig } from './gen-config';
 import { assemble, sha256Hex, verifyLevelFile, writeLevelFiles } from './lib/assemble';
 import { parseArgs, type CliOptions } from './lib/cli';
-import type { MetaRow } from './lib/gen-level';
+import { isRowCurrent, type MetaRow } from './lib/gen-level';
 import { appendMeta, readMeta } from './lib/meta';
 import type { WorkerInit, WorkerJob, WorkerReply } from './lib/worker';
 
@@ -91,7 +91,8 @@ function printStats(rows: MetaRow[]): void {
 
 function jobsFor(opts: CliOptions, all: Map<number, MetaRow>, current: Map<number, MetaRow>): WorkerJob[] {
   if (opts.recompute.length > 0) {
-    // Recompute works on any existing row: it is how rows survive a budget change (and its new generator string).
+    // Recompute works on any existing row (that is how rows survive a budget change); recomputeRow
+    // refuses rows whose untouched parameters differ, and those jobs are reported as failures.
     return opts.ids.flatMap((id) => {
       const row = all.get(id);
       return row ? [{ kind: 'recompute' as const, row, fields: opts.recompute }] : [];
@@ -116,9 +117,9 @@ async function main(): Promise<number> {
   const metaStats = { bad: 0 };
   const all = readMeta(META_PATH, metaStats);
   if (metaStats.bad > 0) console.warn(`skipped ${metaStats.bad} unreadable meta line(s)`);
-  const current = new Map([...all].filter(([, row]) => row.generator === GEN_CONFIG.generator));
+  const current = new Map([...all].filter(([, row]) => isRowCurrent(row, GEN_CONFIG)));
   if (current.size < all.size) {
-    console.warn(`${all.size - current.size} meta row(s) from another generator version are ignored`);
+    console.warn(`${all.size - current.size} meta row(s) from other generator parameters are ignored`);
   }
 
   let failures: string[] = [];

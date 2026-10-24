@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FIXTURE_DIRS } from '../../src/core/__fixtures__/level-fixture';
-import type { MetaRow } from '../lib/gen-level';
+import { GEN_CONFIG } from '../gen-config';
+import { rowConfigOf, type MetaRow } from '../lib/gen-level';
 import { appendMeta, readMeta } from '../lib/meta';
 
 function row(id: number, h = 4032): MetaRow {
@@ -21,6 +22,7 @@ function row(id: number, h = 4032): MetaRow {
     nodes: { easy: 1, adv: 2, chal: 10 },
     ms: 5,
     generator: 'test',
+    config: rowConfigOf(GEN_CONFIG),
   };
 }
 
