@@ -8,6 +8,7 @@
 ## 開放
 
 - **R1 建立專案骨架與測試骨架**（taskboard `GAME-1`）：技術棧已定為 Vue 3 + TypeScript + Vite + Bootstrap 5、Vitest、pnpm、部署 Cloudflare Workers static assets，但 repo 還沒有任何程式碼，CLAUDE.md 的 DoD 三條指令（`pnpm typecheck`、`pnpm test`、`pnpm build`）與 `pnpm run deploy` 都還不存在。範疇依 spec §13 階段 A。要建立 `package.json` scripts、`vue-tsc`、Vitest + `@vue/test-utils`（至少一個冒煙測試）、`wrangler.jsonc`，並把 `.dev.vars` 寫進 `.gitignore`。前置：先走 brainstorming 產出骨架 spec 並經使用者確認。
+- **R2 設定 taskboard 的 setupCommand 與網路策略**：taskboard 專案 `game-prime-trail` 目前 `setupCommand` 為空、`networkAllowed=false`，派工 worktree 沒有 `node_modules`，也無法下載依賴，DoD 必失敗（rules-audit 2026-10-24 R4，裁定 a：骨架完成後再設）。`GAME-1` 合併、lockfile 進 repo 後，把 `setupCommand` 設成 `pnpm install --frozen-lockfile`，並決定網路策略：開 `networkAllowed`，或預先準備 pnpm store 快取。`GAME-1` 本身要新增依賴、必須連網，所以不能走 taskboard 派工，要由主 session 開 worktree 派 subagent 執行。
 
 ## 已結
 
