@@ -22,8 +22,9 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 | `docs/CLAUDE.LOG/` | 工作日誌，記「為什麼」 |
 | `docs/audits/` | 例行盤點規範與各輪紀錄 |
 | `docs/superpowers/repo-governance.md` | 本 repo 的 agent 治理操作指南（角色、補段落方法、日常節奏、`implement-layer`、`/rules-audit`、踩坑） |
+| `docs/superpowers/specs/2026-10-24-prime-trail-design.md` | Prime Trail 總體設計 spec（草稿，§15 開放問題待裁定） |
 
-總規格與架構決策文件尚未建立；第一份 spec 產出後在上表加列。
+架構決策文件尚未建立。
 
 遇規格衝突以權威文件為準、不自行發明；要改規格就改文件再改碼。
 
