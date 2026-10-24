@@ -1,0 +1,187 @@
+// Prime Trail board (spec §6.1–§6.3, §9). Imported by GameBoard.vue.
+
+$pt-head-bg: #9e9e9e;
+$pt-prime-bg: #e0e0e0;
+$pt-cell-bg: #fff;
+$pt-conflict: #dc3545;
+$pt-grid-line: #6c757d;
+$pt-focus: #0d6efd;
+$pt-highlight: #ffc107;
+
+.pt-board {
+  // 10 cells plus a half-cell outer band on each side = 11 cell units wide.
+  --cell: clamp(30px, calc((100vw - 16px) / 11), 48px);
+  --pt-band: calc(var(--cell) / 2);
+  --pt-marker: calc(var(--cell) * 0.3);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--pt-band) repeat(10, var(--cell)) var(--pt-band);
+  grid-template-rows: var(--pt-band) repeat(10, var(--cell)) var(--pt-band);
+  width: max-content;
+  margin-inline: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+
+  &[data-mode='trail'] {
+    touch-action: none;
+  }
+
+  &[data-mode='direct'] {
+    touch-action: pan-y;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px $pt-focus;
+    border-radius: 4px;
+  }
+}
+
+.pt-cell {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: calc(var(--cell) * 0.42);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  color: #212529;
+  background: $pt-cell-bg;
+  --pt-w-selected: 0px;
+  --pt-w-head: 0px;
+  --pt-w-highlight: 0px;
+  --pt-w-conflict: 0px;
+  --pt-r-head: calc(var(--pt-w-selected) + var(--pt-w-head));
+  --pt-r-highlight: calc(var(--pt-r-head) + var(--pt-w-highlight));
+  --pt-r-conflict: calc(var(--pt-r-highlight) + var(--pt-w-conflict));
+
+  // Earlier shadows paint on top; a ring with zero spread draws nothing. The last layer is the
+  // grid line, drawn per cell so the outer band stays clear.
+  box-shadow:
+    inset 0 0 0 var(--pt-w-selected) $pt-focus,
+    inset 0 0 0 var(--pt-r-head) #212529,
+    inset 0 0 0 var(--pt-r-highlight) $pt-highlight,
+    inset 0 0 0 var(--pt-r-conflict) $pt-conflict,
+    inset 0 0 0 0.5px $pt-grid-line;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+
+  &.is-prime {
+    background: $pt-prime-bg;
+  }
+
+  &.is-start {
+    background: $pt-head-bg;
+    color: #fff;
+  }
+
+  &.is-given {
+    font-weight: 600;
+  }
+
+  // Selected / head / highlight / conflict each draw their own inset ring (§9: never colour alone).
+  // Rings stack from the edge inwards in that order and each one only adds its width when its
+  // state is on, so any combination keeps every indicator visible (e.g. selected + conflict).
+  &.is-selected {
+    --pt-w-selected: 3px;
+  }
+
+  &.is-head {
+    --pt-w-head: 3px;
+  }
+
+  &.is-highlight {
+    --pt-w-highlight: 3px;
+  }
+
+  &.is-conflict {
+    --pt-w-conflict: 2px;
+
+    color: $pt-conflict;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+  }
+
+  &.is-shake {
+    animation: pt-shake 150ms linear;
+  }
+}
+
+.pt-board.is-readonly .pt-cell {
+  cursor: default;
+}
+
+// Triangles in the outer band pointing at the start cell (one per edge the start touches).
+.pt-head-marker {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-color: transparent;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+
+  // Centre of the start cell's column / row, in board coordinates.
+  --pt-cx: calc(var(--pt-band) + (var(--col) + 0.5) * var(--cell));
+  --pt-cy: calc(var(--pt-band) + (var(--row) + 0.5) * var(--cell));
+
+  &--top {
+    left: var(--pt-cx);
+    top: calc(var(--pt-band) / 2);
+    border-width: var(--pt-marker) calc(var(--pt-marker) * 0.6) 0;
+    border-top-color: $pt-head-bg;
+  }
+
+  &--bottom {
+    left: var(--pt-cx);
+    top: calc(100% - var(--pt-band) / 2);
+    border-width: 0 calc(var(--pt-marker) * 0.6) var(--pt-marker);
+    border-bottom-color: $pt-head-bg;
+  }
+
+  &--left {
+    top: var(--pt-cy);
+    left: calc(var(--pt-band) / 2);
+    border-width: calc(var(--pt-marker) * 0.6) 0 calc(var(--pt-marker) * 0.6) var(--pt-marker);
+    border-left-color: $pt-head-bg;
+  }
+
+  &--right {
+    top: var(--pt-cy);
+    left: calc(100% - var(--pt-band) / 2);
+    border-width: calc(var(--pt-marker) * 0.6) var(--pt-marker) calc(var(--pt-marker) * 0.6) 0;
+    border-right-color: $pt-head-bg;
+  }
+}
+
+@keyframes pt-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-cell.is-shake {
+    animation: none;
+    outline: 2px solid $pt-conflict;
+    outline-offset: -2px;
+  }
+}

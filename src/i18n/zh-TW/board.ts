@@ -1,5 +1,7 @@
 export const board = {
+  boardLabel: '棋盤',
   cellLabel: '第{r}列第{c}行，{content}',
+  number: '數字 {n}',
   empty: '空白',
   primeCell: '質數格',
   head: '龍頭',

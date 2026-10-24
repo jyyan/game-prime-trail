@@ -22,6 +22,9 @@
 - **R15 `gen-levels.ts` 主流程缺整合測試**【測試・低】：目前測試只打 lib，未涵蓋續跑跳過已完成 id、過期 config 重生、多 worker 與分批輸出一致、`levels.json` 存在時 `--recompute` 退出碼 2。D4 正式跑前補上較穩（用暫存輸出路徑與小預算）。GAME-9 worker 審查建議。來源 GAME-9。
 - **R16 題庫雜湊與檔案格式兩處定義**【技術債・低】：C7 的 `src/data/__tests__/helpers.ts`（純 TS `sha256Hex`、`parseHashFile`）與 C1 的 `scripts/lib/assemble.ts`（`sha256Hex`、`writeLevelFiles` 兩行格式）各自實作。應補跨邊界測試斷言兩邊雜湊相同、C1 寫出的 hash 檔能被 `parseHashFile` 解析，或共用 `src/` 下的純 TS 版本。來源 GAME-15。
 - **R17 慢測生成參數寫成字面值**【技術債・低】：`src/data/__slow__/*.test.ts` 的 backbite 步數、端點上限、easy／advanced 預算、`ADV_FLOOR`、挑戰預算抄自 `scripts/gen-config.ts`。C1 已合併，應改為 import `GEN_CONFIG`。來源 GAME-15。
+- **R18 棋盤 aria-label 未帶衝突種類**【UX・低】：BoardCell 介面只有 `conflict: boolean`，螢幕閱讀器聽不到「數字重複」等原因；要補需擴充 BoardCell props（例如 `conflictKinds`）並使用 `conflict.*` 字串。來源 GAME-10。
+- **R19 棋盤拖曳只以 mock `elementFromPoint` 驗證**【測試・低】：jsdom 無版面；實際手機拖曳與 `scrollY` 不變留給 E1 Playwright 情境 3，狀態框線疊加也需在真瀏覽器目視。來源 GAME-10。
+- **R20 `GameBoard` 的 `pointerdown` 未檢查 `e.button`**【UX・低】：右鍵、中鍵也會 emit `press` 並開始接續拖曳；spec 未要求，D1 接線或 E1 時再決定是否只接受主鍵。layer-C 審查建議。來源 GAME-10。
 
 ## 已結
 
