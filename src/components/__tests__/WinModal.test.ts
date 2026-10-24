@@ -23,7 +23,7 @@ async function mountModal(props: Partial<typeof base> & Record<string, unknown> 
   return wrapper;
 }
 
-const q = (selector: string) => document.body.querySelector<HTMLElement>(selector);
+const q = <T extends HTMLElement = HTMLElement>(selector: string) => document.body.querySelector<T>(selector);
 
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount());
@@ -105,6 +105,52 @@ describe('WinModal', () => {
     for (const action of actions) {
       expect(wrapper.emitted(action), action).toEqual([[]]);
     }
+  });
+
+  it('shows the win illustration with a size and Chinese alt text', async () => {
+    await mountModal();
+    const img = q<HTMLImageElement>('img[data-win-art]');
+    expect(img).not.toBeNull();
+    expect(img!.getAttribute('src')).toMatch(/illustrations\/win\.webp$/);
+    expect(img!.getAttribute('width')).toBe('140');
+    expect(img!.getAttribute('height')).toBe('140');
+    expect(img!.getAttribute('alt')).toBe('小龍舉手歡呼，身旁有獎盃和彩帶');
+  });
+
+  it('renders time and steps as large Fredoka numbers with their labels', async () => {
+    await mountModal();
+    const time = q('[data-time]')!;
+    const steps = q('[data-steps]')!;
+    expect(time.querySelector('.pt-win__label')?.textContent).toBe('時間');
+    expect(time.querySelector('.pt-win__value.pt-num')?.textContent).toBe('12:34');
+    expect(steps.querySelector('.pt-win__label')?.textContent).toBe('步數');
+    expect(steps.querySelector('.pt-win__value.pt-num')?.textContent).toBe('81');
+    // Screen readers and text queries still read "label value" with one space between.
+    expect(time.textContent).toContain('時間 12:34');
+    expect(steps.textContent).toContain('步數 81');
+  });
+
+  it('styles new-record badges with the pink badge class, not a Bootstrap colour', async () => {
+    await mountModal({ isNewBest: { time: true, steps: true } });
+    for (const badge of document.body.querySelectorAll('[data-new-best]')) {
+      expect(badge.classList.contains('pt-win__badge')).toBe(true);
+      expect(badge.className).not.toMatch(/text-bg-/);
+    }
+  });
+
+  it('makes next-random the only primary button and puts it first', async () => {
+    await mountModal();
+    const buttons = [...document.body.querySelectorAll<HTMLButtonElement>('.modal-footer button')];
+    expect(buttons.map((b) => b.dataset.action)).toEqual(['nextRandom', 'viewSolution', 'exportPdf', 'backHome']);
+    expect(document.body.querySelectorAll('.modal-footer .btn-primary')).toHaveLength(1);
+    expect(buttons[0].classList.contains('btn-primary')).toBe(true);
+    for (const b of buttons.slice(1)) expect(b.classList.contains('btn-outline-secondary')).toBe(true);
+  });
+
+  it('focuses the next-random button when opened', async () => {
+    await mountModal();
+    await nextTick();
+    expect(document.activeElement).toBe(q('[data-action="nextRandom"]'));
   });
 
   it('forwards close requests as update:modelValue', async () => {
