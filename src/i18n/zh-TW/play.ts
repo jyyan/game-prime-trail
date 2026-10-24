@@ -10,5 +10,7 @@ export const play = {
   hintDiverged: '從 {n} 開始與參考解不同；提示依參考解',
   remainingErrors: '還有 {n} 格有錯',
   levelMissing: '找不到這張地圖',
+  loadError: '題庫載入失敗，請重新整理再試一次',
   loading: '載入中…',
+  actions: '遊戲操作',
 } as const;
