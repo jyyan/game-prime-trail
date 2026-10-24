@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案
 
-game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/2026-10-24-prime-trail-design.md`（草稿，待使用者確認）。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 pnpm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。本 repo **已登錄 taskboard**（專案 `game-prime-trail`，任務前綴 `GAME`），凡「已登錄 taskboard 的 repo」條件句一律適用：要做的工作開 taskboard 任務，`docs/backlog.md` 只管技術債與「之後再做」。專案骨架尚未建立（taskboard `GAME-1`，backlog R1），以下指令在骨架建好後生效：
+game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/2026-10-24-prime-trail-design.md`（使用者已確認），實作計畫 `docs/superpowers/plans/2026-10-24-prime-trail.md`。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 pnpm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。本 repo **已登錄 taskboard**（專案 `game-prime-trail`，任務前綴 `GAME`），凡「已登錄 taskboard 的 repo」條件句一律適用：要做的工作開 taskboard 任務，`docs/backlog.md` 只管技術債與「之後再做」。常用指令：
 
 - `pnpm dev`：Vite 開發伺服器
-- `pnpm typecheck`：`vue-tsc --noEmit`
+- `pnpm typecheck`：`vue-tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json`
 - `pnpm test`：`vitest run`；單一檔 `pnpm vitest run <檔案路徑>`，單一案例加 `-t "<名稱>"`
 - `pnpm test:slow`：慢測（題庫重量檢查），不屬 DoD
 - `pnpm test:e2e`：Playwright，不屬 DoD，合併前人工跑
@@ -24,7 +24,8 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 | `docs/CLAUDE.LOG/` | 工作日誌，記「為什麼」 |
 | `docs/audits/` | 例行盤點規範與各輪紀錄 |
 | `docs/superpowers/repo-governance.md` | 本 repo 的 agent 治理操作指南（角色、補段落方法、日常節奏、`implement-layer`、`/rules-audit`、踩坑） |
-| `docs/superpowers/specs/2026-10-24-prime-trail-design.md` | Prime Trail 總體設計 spec（草稿，§15 開放問題待裁定） |
+| `docs/superpowers/specs/2026-10-24-prime-trail-design.md` | Prime Trail 總體設計 spec（使用者已確認，§15.2 為規劃者決定、使用者已接受） |
+| `docs/superpowers/plans/2026-10-24-prime-trail.md` | 實作計畫（A–E 五層、19 任務，已匯入 taskboard GAME-2…GAME-20） |
 
 架構決策文件尚未建立。
 
@@ -68,7 +69,7 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 2. `pnpm test`
 3. `pnpm build`
 
-骨架建立前（backlog R1）三條指令都不存在，只改文件的變更免跑；任何程式碼改動必須先完成 R1。
+只改文件的變更免跑。
 
 
 ## 工作日誌與 backlog

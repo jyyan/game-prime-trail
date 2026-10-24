@@ -7,9 +7,11 @@
 
 ## 開放
 
-- **R1 建立專案骨架與測試骨架**（taskboard `GAME-1`）：技術棧已定為 Vue 3 + TypeScript + Vite + Bootstrap 5、Vitest、pnpm、部署 Cloudflare Workers static assets，但 repo 還沒有任何程式碼，CLAUDE.md 的 DoD 三條指令（`pnpm typecheck`、`pnpm test`、`pnpm build`）與 `pnpm run deploy` 都還不存在。範疇依 spec §13 階段 A。要建立 `package.json` scripts、`vue-tsc`、Vitest + `@vue/test-utils`（至少一個冒煙測試）、`wrangler.jsonc`，並把 `.dev.vars` 寫進 `.gitignore`。前置：先走 brainstorming 產出骨架 spec 並經使用者確認。
-- **R2 設定 taskboard 的 setupCommand 與網路策略**：taskboard 專案 `game-prime-trail` 目前 `setupCommand` 為空、`networkAllowed=false`，派工 worktree 沒有 `node_modules`，也無法下載依賴，DoD 必失敗（rules-audit 2026-10-24 R4，裁定 a：骨架完成後再設）。`GAME-1` 合併、lockfile 進 repo 後，把 `setupCommand` 設成 `pnpm install --frozen-lockfile`，並決定網路策略：開 `networkAllowed`，或預先準備 pnpm store 快取。`GAME-1` 本身要新增依賴、必須連網，所以不能走 taskboard 派工，要由主 session 開 worktree 派 subagent 執行。
+- **R3 Sass `@import` 棄用警告**【技術債・低】：Bootstrap 5.3 的 SCSS 仍用 `@import`，`pnpm build` 會印大量 Sass deprecation 警告。等 Bootstrap 改用 `@use` 後升級，或在 vite 的 `css.preprocessorOptions.scss` 設 `silenceDeprecations: ['import']`（改 A1 的設定檔，需另開任務）。來源 GAME-2。
+- **R4 TypeScript 釘在 `~6.0.3`**【技術債・低】：vue-tsc 3.3.13 與 TS 7 不相容（`typescript/lib/tsc` 未匯出）。vue-tsc 支援 TS 7 後升級 TypeScript，改 `package.json` 與 lockfile。來源 GAME-2。
+- **R5 `allowBuilds` 的 `core-js` 核准**【流程・中】：只為讓 install 不報錯；若要收緊，改成 `core-js: false` 並確認 `--frozen-lockfile` 仍能通過。來源 GAME-2。
 
 ## 已結
 
-<!-- 範例：- **R0 範本安裝**：2026-10-09 完成，commit abc1234。 -->
+- **R1 建立專案骨架與測試骨架**：2026-10-24 由 taskboard GAME-2（plan Task A1）完成，commit 58338e8（合併見同日 merge commit）。DoD 三條指令可執行，測試 5 檔 29 案。
+- **R2 設定 taskboard 的 setupCommand 與網路策略**：2026-10-24 GAME-2 合併後設定 `setupCommand=pnpm install --frozen-lockfile`、`networkAllowed=true`（使用者同意開網路，不另備 pnpm store 快取）。
