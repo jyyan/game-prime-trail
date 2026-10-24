@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { decodeLevel, derivePuzzle } from '../../core/level-decode';
 import { solve } from '../../core/solver';
 import { isSolved } from '../../core/validate';
-import { SAMPLE_IDS, readLevelFile, skipWithoutLevels } from '../__tests__/helpers';
+import { SAMPLE_IDS, readLevelFile } from '../__tests__/helpers';
 
 // spec §12.2: 20 fixed ids, the solver's collected challenge solution must pass isSolved.
 const IDS = [...SAMPLE_IDS, 10, 123, 200, 321, 404, 555, 610, 777, 808, 999];
 const CHAL_BUDGET = 5_000_000; // scripts/gen-config.ts challengeBudget
 
-describe.skipIf(skipWithoutLevels())('levels.json solver solutions', () => {
+describe('levels.json solver solutions', () => {
   it('uses 20 distinct ids', () => {
     expect(new Set(IDS).size).toBe(20);
   });

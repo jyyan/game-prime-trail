@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { checkLevelFile, readLevelFile, skipWithoutLevels } from './helpers';
+import { checkLevelFile, readLevelFile } from './helpers';
 
-describe.skipIf(skipWithoutLevels())('levels.json integrity', () => {
+describe('levels.json integrity', () => {
   it('passes the cheap checks of spec §12.1 within 2 s', () => {
     const started = performance.now();
     const file = readLevelFile();

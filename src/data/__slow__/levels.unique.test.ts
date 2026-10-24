@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { decodeLevel, derivePuzzle, hintMaskToPrimes } from '../../core/level-decode';
 import { solve } from '../../core/solver';
 import type { Difficulty } from '../../core/types';
-import { readLevelFile, skipWithoutLevels } from '../__tests__/helpers';
+import { readLevelFile } from '../__tests__/helpers';
 
 // Same budgets and floor as scripts/gen-config.ts (EASY_BUDGET, ADV_BUDGET, ADV_FLOOR; spec §4.3-§4.5).
 const BUDGET: Record<Exclude<Difficulty, 'challenge'>, number> = {
@@ -11,7 +11,7 @@ const BUDGET: Record<Exclude<Difficulty, 'challenge'>, number> = {
 };
 const ADV_FLOOR = 6;
 
-describe.skipIf(skipWithoutLevels())('levels.json uniqueness (all 1000)', () => {
+describe('levels.json uniqueness (all 1000)', () => {
   const levels = () => readLevelFile().levels.map((record, i) => decodeLevel(record, i + 1));
 
   for (const difficulty of ['easy', 'advanced'] as const) {
