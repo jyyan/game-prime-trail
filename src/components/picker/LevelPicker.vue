@@ -31,8 +31,8 @@ const validId = computed<number | null>(() => {
   return id !== null && Number.isInteger(id) && id >= 1 && id <= props.count ? id : null;
 });
 
-// An empty field disables "start" quietly; only a typed but invalid id gets a message.
-const showInvalid = computed(() => props.modelValue !== null && validId.value === null);
+// Any id outside 1…count, the empty field included, disables "start" with a message (plan §C6).
+const showInvalid = computed(() => validId.value === null);
 
 function perDifficulty<T>(pick: (id: number, d: Difficulty) => T, fallback: T): Record<Difficulty, T> {
   const id = validId.value;
@@ -56,7 +56,8 @@ const resumeLabel = computed(() =>
 
 function onInput(event: Event): void {
   const raw = (event.target as HTMLInputElement).value.trim();
-  emit('update:modelValue', raw === '' ? null : Number(raw));
+  const id = raw === '' ? Number.NaN : Number(raw);
+  emit('update:modelValue', Number.isFinite(id) ? id : null);
 }
 
 function start(): void {

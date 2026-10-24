@@ -38,14 +38,26 @@ describe('LevelPicker', () => {
   it('disables start for ids above count and non-integers', async () => {
     const wrapper = mountPicker({ modelValue: 1001 });
     expect(startButton(wrapper).attributes('disabled')).toBeDefined();
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
     await wrapper.setProps({ modelValue: 2.5 });
     expect(startButton(wrapper).attributes('disabled')).toBeDefined();
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
+    await wrapper.setProps({ modelValue: 1000 });
+    expect(startButton(wrapper).attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
   });
 
-  it('disables start without a message while the field is empty', () => {
+  it('treats an empty field as an invalid id', () => {
     const wrapper = mountPicker({ modelValue: null });
     expect(startButton(wrapper).attributes('disabled')).toBeDefined();
-    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    expect(wrapper.find('[data-invalid-id]').text()).toBe('請輸入 1 到 1000 的地圖編號');
+  });
+
+  it('does not emit start for an invalid id, even via Enter', async () => {
+    const wrapper = mountPicker({ modelValue: 2.5 });
+    await wrapper.find('input[data-level-id]').trigger('keydown', { key: 'Enter' });
+    await startButton(wrapper).trigger('click');
+    expect(wrapper.emitted('start')).toBeUndefined();
   });
 
   it('emits start with the id and the current difficulty', async () => {
@@ -64,6 +76,28 @@ describe('LevelPicker', () => {
     await field.setValue('42');
     await field.setValue('');
     expect(wrapper.emitted('update:modelValue')).toEqual([[42], [null]]);
+  });
+
+  it('parses decimal, padded and non-numeric field input', async () => {
+    const wrapper = mountPicker();
+    const field = wrapper.find('input[data-level-id]');
+    await field.setValue('2.5');
+    await field.setValue('007');
+    // jsdom sanitises number inputs; override `value` to feed raw text through the parser.
+    Object.defineProperty(field.element, 'value', { configurable: true, get: () => ' abc ' });
+    await field.trigger('input');
+    Object.defineProperty(field.element, 'value', { configurable: true, get: () => ' 12 ' });
+    await field.trigger('input');
+    expect(wrapper.emitted('update:modelValue')).toEqual([[2.5], [7], [null], [12]]);
+  });
+
+  it('keeps start disabled after a decimal is typed', async () => {
+    const wrapper = mountPicker();
+    await wrapper.find('input[data-level-id]').setValue('2.5');
+    const [typed] = wrapper.emitted<[number | null]>('update:modelValue')![0];
+    await wrapper.setProps({ modelValue: typed });
+    expect(startButton(wrapper).attributes('disabled')).toBeDefined();
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
   });
 
   it('shows completion and best for the selected id', () => {

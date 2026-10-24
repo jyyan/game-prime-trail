@@ -1,5 +1,5 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { nextTick } from 'vue';
 import type { GameStatus } from '../../core/types';
 import { useConfirm } from '../../composables/useConfirm';
@@ -7,9 +7,9 @@ import PdfExportDialog from '../game/PdfExportDialog.vue';
 
 const wrappers: VueWrapper[] = [];
 
-async function mountDialog(gameStatus: GameStatus, extra: Record<string, unknown> = {}) {
+async function mountDialog(gameStatus: GameStatus) {
   const wrapper = mount(PdfExportDialog, {
-    props: { modelValue: true, gameStatus, ...extra },
+    props: { modelValue: true, gameStatus },
     attachTo: document.body,
   });
   wrappers.push(wrapper);
@@ -20,12 +20,17 @@ async function mountDialog(gameStatus: GameStatus, extra: Record<string, unknown
 const checkbox = () => document.body.querySelector<HTMLInputElement>('input[data-include-solution]')!;
 const exportButton = () => document.body.querySelector<HTMLButtonElement>('button[data-action="export"]')!;
 
-async function check(): Promise<void> {
-  const box = checkbox();
-  box.checked = true;
-  box.dispatchEvent(new Event('change'));
+async function toggle(): Promise<void> {
+  // A real click flips `checked` and fires `change`, as the browser does.
+  checkbox().click();
   await flushPromises();
 }
+const check = toggle;
+
+// useConfirm is a module singleton; every test must start with no pending request.
+beforeEach(() => {
+  expect(useConfirm().pending.value).toBeNull();
+});
 
 afterEach(() => {
   useConfirm().pending.value?.settle(false);
@@ -67,7 +72,7 @@ describe('PdfExportDialog', () => {
     const pending = useConfirm().pending.value;
     expect(pending).not.toBeNull();
     expect(pending?.message).toBe('匯出含解答的 PDF 後，這局不列入最佳紀錄。');
-    expect(exportButton().disabled).toBe(true);
+    expect(wrapper.emitted('markAssisted')).toBeUndefined();
     pending!.settle(true);
     await flushPromises();
     expect(wrapper.emitted('markAssisted')).toEqual([[]]);
@@ -87,12 +92,37 @@ describe('PdfExportDialog', () => {
     expect(wrapper.emitted('export')).toEqual([[{ includeSolution: false }]]);
   });
 
-  it('skips the confirmation when the game is already assisted', async () => {
-    const wrapper = await mountDialog('playing', { assisted: true });
+  it('does not confirm when unchecking while playing', async () => {
+    const wrapper = await mountDialog('playing');
     await check();
+    useConfirm().pending.value!.settle(true);
+    await flushPromises();
+    await toggle();
+    expect(checkbox().checked).toBe(false);
     expect(useConfirm().pending.value).toBeNull();
-    expect(wrapper.emitted('markAssisted')).toBeUndefined();
+    expect(wrapper.emitted('markAssisted')).toEqual([[]]);
+    exportButton().click();
+    expect(wrapper.emitted('export')).toEqual([[{ includeSolution: false }]]);
+  });
+
+  it('asks again when re-checked after a cancel', async () => {
+    const wrapper = await mountDialog('playing');
+    await check();
+    useConfirm().pending.value!.settle(false);
+    await flushPromises();
+    await check();
+    expect(useConfirm().pending.value).not.toBeNull();
+    useConfirm().pending.value!.settle(true);
+    await flushPromises();
+    expect(wrapper.emitted('markAssisted')).toEqual([[]]);
     expect(checkbox().checked).toBe(true);
+  });
+
+  it('switches to confirming when the status changes to playing', async () => {
+    const wrapper = await mountDialog('idle');
+    await wrapper.setProps({ gameStatus: 'playing' });
+    await check();
+    expect(useConfirm().pending.value).not.toBeNull();
   });
 
   it('resets the option each time it opens', async () => {

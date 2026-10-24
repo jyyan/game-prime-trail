@@ -5,15 +5,10 @@ import { useConfirm } from '../../composables/useConfirm';
 import { t } from '../../i18n';
 import BsModal from '../ui/BsModal.vue';
 
-const props = withDefaults(
-  defineProps<{
-    modelValue: boolean;
-    gameStatus: GameStatus;
-    /** The game already counts as assisted, so adding the solution page needs no confirmation. */
-    assisted?: boolean;
-  }>(),
-  { assisted: false },
-);
+const props = defineProps<{
+  modelValue: boolean;
+  gameStatus: GameStatus;
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
@@ -24,34 +19,24 @@ const emit = defineEmits<{
 const { confirm } = useConfirm();
 const checkboxId = `pt-pdf-solution-${useId()}`;
 const includeSolution = ref(false);
-const confirming = ref(false);
-// Bumped on every open so a confirmation answered after the dialog reopened is ignored.
-let session = 0;
 
+// Each opening starts unchecked.
 watch(
   () => props.modelValue,
   (open) => {
-    if (!open) return;
-    session++;
-    includeSolution.value = false;
-    confirming.value = false;
+    if (open) includeSolution.value = false;
   },
-  { immediate: true },
 );
 
 async function onToggle(event: Event): Promise<void> {
   const checked = (event.target as HTMLInputElement).checked;
   includeSolution.value = checked;
   // Only a mid-game export with the solution affects records (spec §6.9).
-  if (!checked || props.gameStatus !== 'playing' || props.assisted) return;
-  const mine = session;
-  confirming.value = true;
+  if (!checked || props.gameStatus !== 'playing') return;
   const ok = await confirm(t('pdf.confirmSolution'), {
     okLabel: t('common.confirm'),
     cancelLabel: t('common.cancel'),
   });
-  if (mine !== session) return;
-  confirming.value = false;
   if (ok) {
     emit('markAssisted');
   } else {
@@ -79,7 +64,6 @@ function onExport(): void {
         type="checkbox"
         data-include-solution
         :checked="includeSolution"
-        :disabled="confirming"
         @change="onToggle"
       />
       <label class="form-check-label" :for="checkboxId">{{ t('pdf.includeSolution') }}</label>
@@ -88,7 +72,7 @@ function onExport(): void {
       <button type="button" class="btn btn-secondary" data-action="cancel" @click="emit('update:modelValue', false)">
         {{ t('common.cancel') }}
       </button>
-      <button type="button" class="btn btn-primary" data-action="export" :disabled="confirming" @click="onExport">
+      <button type="button" class="btn btn-primary" data-action="export" @click="onExport">
         {{ t('pdf.export') }}
       </button>
     </template>

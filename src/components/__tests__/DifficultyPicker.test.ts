@@ -27,15 +27,21 @@ describe('DifficultyPicker', () => {
 
   it('marks a cleared difficulty', () => {
     const wrapper = mountPicker({ completion: { ...none, easy: 'cleared' } });
-    expect(wrapper.find('[data-difficulty="easy"] [data-completion="cleared"]').exists()).toBe(true);
-    expect(wrapper.find('[data-difficulty="advanced"] [data-completion="none"]').exists()).toBe(true);
+    const mark = wrapper.find('[data-difficulty="easy"] [data-completion="cleared"]');
+    expect(mark.exists()).toBe(true);
+    expect(mark.text()).toContain('✔');
+    expect(mark.text()).not.toContain('輔助完成');
+    expect(wrapper.find('[data-difficulty="advanced"] [data-completion="none"]').text()).toBe('');
   });
 
   it('labels an assisted-only clear', () => {
     const wrapper = mountPicker({ completion: { ...none, challenge: 'assisted' } });
     const mark = wrapper.find('[data-difficulty="challenge"] [data-completion="assisted"]');
     expect(mark.exists()).toBe(true);
-    expect(wrapper.find('[data-difficulty="challenge"]').text()).toContain('輔助完成');
+    expect(mark.text()).toContain('✓');
+    expect(mark.text()).toContain('輔助完成');
+    expect(mark.text()).not.toContain('✔');
+    expect(wrapper.find('[data-difficulty="easy"]').text()).not.toContain('輔助完成');
   });
 
   it('shows best time and steps', () => {
@@ -45,10 +51,37 @@ describe('DifficultyPicker', () => {
     expect(text).toContain('最少 80 步');
   });
 
-  it('marks the selected difficulty', () => {
+  it('marks the selected difficulty', async () => {
     const wrapper = mountPicker({ modelValue: 'challenge' });
-    expect(wrapper.find('[data-difficulty="challenge"]').attributes('aria-pressed')).toBe('true');
-    expect(wrapper.find('[data-difficulty="easy"]').attributes('aria-pressed')).toBe('false');
+    const challenge = () => wrapper.find('[data-difficulty="challenge"]');
+    const easy = () => wrapper.find('[data-difficulty="easy"]');
+    expect(challenge().attributes('aria-pressed')).toBe('true');
+    expect(challenge().classes()).toContain('btn-primary');
+    expect(easy().attributes('aria-pressed')).toBe('false');
+    expect(easy().classes()).toContain('btn-outline-primary');
+    expect(easy().classes()).not.toContain('btn-primary');
+    await wrapper.setProps({ modelValue: 'easy' });
+    expect(easy().attributes('aria-pressed')).toBe('true');
+    expect(easy().classes()).toContain('btn-primary');
+    expect(challenge().attributes('aria-pressed')).toBe('false');
+  });
+
+  it('shows only the parts of a best record that exist', () => {
+    const wrapper = mountPicker({
+      best: {
+        easy: entry({ assistedClears: 1 }),
+        advanced: entry({ bestMs: 61_000, clears: 1 }),
+        challenge: entry({ bestSteps: 95, clears: 1 }),
+      },
+    });
+    expect(wrapper.find('[data-difficulty="easy"] [data-best]').text()).toBe('');
+    expect(wrapper.find('[data-difficulty="advanced"] [data-best]').text()).toBe('最快 01:01');
+    expect(wrapper.find('[data-difficulty="challenge"] [data-best]').text()).toBe('最少 95 步');
+  });
+
+  it('shows no best text without a record', () => {
+    const wrapper = mountPicker();
+    for (const item of wrapper.findAll('[data-best]')) expect(item.text()).toBe('');
   });
 
   it('emits update:modelValue on click', async () => {

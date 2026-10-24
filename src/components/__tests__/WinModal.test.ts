@@ -59,6 +59,38 @@ describe('WinModal', () => {
     expect(q('[data-not-recorded]')?.textContent).toBe('本局不列入最佳紀錄');
   });
 
+  it('shows the steps badge for a new fewest-steps record', async () => {
+    await mountModal({ isNewBest: { time: false, steps: true } });
+    expect(q('[data-steps] [data-new-best="steps"]')?.textContent).toBe('新的最少步數');
+    expect(q('[data-new-best="time"]')).toBeNull();
+  });
+
+  it('shows both badges when both records are new', async () => {
+    await mountModal({ isNewBest: { time: true, steps: true } });
+    expect(q('[data-time] [data-new-best="time"]')).not.toBeNull();
+    expect(q('[data-steps] [data-new-best="steps"]')).not.toBeNull();
+  });
+
+  it('shows no badges when nothing is new', async () => {
+    await mountModal({ isNewBest: { time: false, steps: false } });
+    expect(q('[data-new-best]')).toBeNull();
+  });
+
+  it('shows only the best time when best steps is null', async () => {
+    await mountModal({ best: { bestMs: 61_000, bestSteps: null } });
+    expect(q('[data-best]')?.textContent).toBe('最快紀錄 01:01');
+  });
+
+  it('shows only the best steps when best time is null', async () => {
+    await mountModal({ best: { bestMs: null, bestSteps: 95 } });
+    expect(q('[data-best]')?.textContent).toBe('最少步數 95');
+  });
+
+  it('omits the best line when both best values are null', async () => {
+    await mountModal({ best: { bestMs: null, bestSteps: null } });
+    expect(q('[data-best]')).toBeNull();
+  });
+
   it('omits the best line when there is no record', async () => {
     await mountModal({ best: null, isNewBest: { time: false, steps: false } });
     expect(q('[data-best]')).toBeNull();
