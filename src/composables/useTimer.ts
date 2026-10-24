@@ -1,6 +1,7 @@
-import { ref, type Ref } from 'vue';
+import { customRef, ref, type Ref } from 'vue';
 
 export interface Timer {
+  /** Whole milliseconds, computed from `now()` on every read; writes are ignored. */
   elapsedMs: Ref<number>;
   /** User intent: true between start()/resume() and pause()/stop()/reset(), even while the tab is hidden. */
   running: Ref<boolean>;
@@ -30,23 +31,38 @@ export function useTimer(opts: TimerOptions = {}): Timer {
   const now = opts.now ?? (() => performance.now());
   const doc = opts.doc === undefined ? (typeof document === 'undefined' ? null : document) : opts.doc;
 
-  const elapsedMs = ref(0);
   const running = ref(false);
   let phase: Phase = 'idle';
   let accumulated = 0;
   let segmentStart: number | null = null;
   let interval: ReturnType<typeof setInterval> | null = null;
+  let notify: () => void = () => {};
+
+  // Every read settles against now(), so a snapshot taken between ticks is exact; the
+  // interval only notifies dependents so the display refreshes.
+  const elapsedMs = customRef<number>((track, trigger) => {
+    notify = trigger;
+    return {
+      get() {
+        track();
+        const live = segmentStart === null ? accumulated : accumulated + (now() - segmentStart);
+        return Math.round(live);
+      },
+      set() {},
+    };
+  });
 
   const isHidden = (): boolean => doc?.hidden === true;
 
   function refresh(): void {
-    elapsedMs.value = segmentStart === null ? accumulated : accumulated + (now() - segmentStart);
+    notify();
   }
 
   function beginSegment(): void {
     if (segmentStart !== null || isHidden()) return;
     segmentStart = now();
     interval = setInterval(refresh, TICK_MS);
+    notify();
   }
 
   function endSegment(): void {
@@ -58,7 +74,7 @@ export function useTimer(opts: TimerOptions = {}): Timer {
       clearInterval(interval);
       interval = null;
     }
-    elapsedMs.value = accumulated;
+    notify();
   }
 
   function start(): void {
@@ -89,7 +105,7 @@ export function useTimer(opts: TimerOptions = {}): Timer {
   function reset(ms = 0): void {
     endSegment();
     accumulated = ms;
-    elapsedMs.value = ms;
+    notify();
     phase = 'idle';
     running.value = false;
   }

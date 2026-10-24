@@ -26,8 +26,19 @@ describe('useTimer', () => {
     timer.start();
     expect(timer.running.value).toBe(true);
     vi.advanceTimersByTime(1000);
-    expect(timer.elapsedMs.value).toBeGreaterThanOrEqual(900);
-    expect(timer.elapsedMs.value).toBeLessThanOrEqual(1100);
+    expect(timer.elapsedMs.value).toBe(1000);
+  });
+
+  it('reads are exact between interval ticks and always whole milliseconds', () => {
+    let t = 0;
+    const fine = useTimer({ now: () => t, doc: null });
+    fine.start();
+    t = 100.4; // no interval tick has fired yet
+    expect(fine.elapsedMs.value).toBe(100);
+    t = 1100.6;
+    expect(fine.elapsedMs.value).toBe(1101);
+    expect(Number.isInteger(fine.elapsedMs.value)).toBe(true);
+    fine.dispose();
   });
 
   it('start() while running is a no-op', () => {
@@ -89,7 +100,7 @@ describe('useTimer', () => {
     expect(timer.running.value).toBe(true);
     setHidden(false);
     vi.advanceTimersByTime(1000);
-    expect(timer.elapsedMs.value).toBeGreaterThanOrEqual(1900);
+    expect(timer.elapsedMs.value).toBe(2000);
     timer.pause();
     expect(timer.elapsedMs.value).toBe(2000);
   });

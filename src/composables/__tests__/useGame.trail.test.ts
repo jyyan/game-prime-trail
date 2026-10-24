@@ -1,7 +1,7 @@
+import { effectScope } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FIXTURE_PATH, FIXTURE_RECORD } from '../../core/__fixtures__/level-fixture';
 import { decodeLevel } from '../../core/level-decode';
-import { isPrime } from '../../core/primes';
 import type { Difficulty } from '../../core/types';
 import { useGame } from '../useGame';
 import { useTimer, type Timer } from '../useTimer';
@@ -73,6 +73,41 @@ describe('useGame trail mode (challenge)', () => {
     expect(game.hint()).toBeNull();
   });
 
+  it('a won board is locked: place, clear, retreat and undo are rejected', () => {
+    const game = newGame('challenge');
+    for (let n = 2; n <= 100; n++) game.trailPress(cellOf(n));
+    expect(game.state.status).toBe('won');
+    const won = Array.from(game.state.grid);
+    const frozen = game.elapsedMs.value;
+
+    expect(game.place(cellOf(100), 5)).toBe(false);
+    expect(game.clear(cellOf(100))).toBe(false);
+    expect(game.trailPress(cellOf(99))).toBe('rejected');
+    expect(game.undo()).toBe(false);
+    game.select(cellOf(100));
+    game.backspace();
+
+    expect(Array.from(game.state.grid)).toEqual(won);
+    expect(game.state.status).toBe('won');
+    expect(game.state.steps).toBe(99);
+    expect(timer.running.value).toBe(false);
+    vi.advanceTimersByTime(2000);
+    expect(game.elapsedMs.value).toBe(frozen);
+
+    game.reset();
+    expect(game.state.status).toBe('idle');
+    expect(game.trailPress(cellOf(2))).toBe('placed');
+  });
+
+  it('undoing the only move keeps status playing and the timer running', () => {
+    const game = newGame('challenge');
+    game.trailPress(cellOf(2));
+    expect(game.undo()).toBe(true);
+    expect(game.head.value).toBe(1);
+    expect(game.state.status).toBe('playing');
+    expect(timer.running.value).toBe(true);
+  });
+
   it('undo restores the last cell without touching steps', () => {
     const game = newGame('challenge');
     game.trailPress(cellOf(2));
@@ -134,15 +169,37 @@ describe('useGame trail mode (challenge)', () => {
   });
 });
 
+describe('useGame owned timer', () => {
+  it('creates its own timer when none is injected and disposes it with the scope', () => {
+    const remove = vi.spyOn(document, 'removeEventListener');
+    const scope = effectScope();
+    const game = scope.run(() => useGame(level, 'challenge'))!;
+    expect(game.trailPress(cellOf(2))).toBe('placed');
+    expect(remove).not.toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    scope.stop();
+    expect(remove).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
+    remove.mockRestore();
+  });
+
+  it('does not dispose an injected timer with the scope', () => {
+    const scope = effectScope();
+    const game = scope.run(() => useGame(level, 'challenge', null, { timer }))!;
+    game.trailPress(cellOf(2));
+    scope.stop();
+    expect(timer.running.value).toBe(true);
+    vi.advanceTimersByTime(1000);
+    timer.pause();
+    expect(game.elapsedMs.value).toBe(1000);
+  });
+});
+
 describe('useGame trail mode (easy)', () => {
   it('head skips over givens (Review Focus 1)', () => {
     const game = newGame('easy');
     expect(game.head.value).toBe(3); // 1, 2, 3 are givens
     expect(game.headCell.value).toBe(cellOf(3));
-    for (let n = 4; n <= 10; n++) {
-      if (isPrime(n)) continue;
-      expect(game.trailPress(cellOf(n))).toBe('placed');
-    }
+    // Spelled out: 5 and 7 are givens on easy, so only these are pressed.
+    for (const n of [4, 6, 8, 9, 10]) expect(game.trailPress(cellOf(n))).toBe('placed');
     expect(game.head.value).toBe(11);
     expect(game.headCell.value).toBe(cellOf(11));
     expect(game.trailPress(cellOf(12))).toBe('placed');

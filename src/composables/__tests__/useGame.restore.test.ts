@@ -72,6 +72,13 @@ describe('useGame restore', () => {
     expect(game.elapsedMs.value).toBe(61_000);
   });
 
+  it('snapshot captures time played since the last interval tick', () => {
+    const game = useGame(level, 'challenge', savedAt30(), { timer });
+    game.place(FIXTURE_PATH[30], 31);
+    vi.advanceTimersByTime(1240); // last tick at 1000 ms
+    expect(game.snapshot().elapsedMs).toBe(62_240);
+  });
+
   it('snapshot returns every field', () => {
     const game = useGame(level, 'challenge', savedAt30(), { timer });
     const snap = game.snapshot();
@@ -97,7 +104,11 @@ describe('useGame restore', () => {
     expect(game.state.grid[8]).toBe(1);
     expect(game.state.grid[9]).toBe(2); // given prime
     expect(game.state.grid[FIXTURE_PATH[3]]).toBe(0); // 4 is not a given
-    expect(game.puzzle.givens.size).toBe(26);
+    expect(game.state.grid[FIXTURE_PATH[29]]).toBe(0); // 30 came from the save and is not a given
+    // Every non-given cell is empty and every given keeps its number.
+    for (let cell = 0; cell < 100; cell++) {
+      expect(game.state.grid[cell]).toBe(game.puzzle.givens.get(cell) ?? 0);
+    }
   });
 
   it('a snapshot restores into an equivalent new game', () => {

@@ -130,8 +130,12 @@ export function useGame(
     state.grid = next;
   }
 
+  // A won board is locked: place/clear/undo are rejected until reset(), so the cleared
+  // time and the solved grid stay as they were at the win (spec 7.3 stops the timer there).
+  const locked = (): boolean => state.status === 'won';
+
   function place(cell: Cell, n: number): boolean {
-    if (!isCell(cell) || isGiven(cell)) return false;
+    if (locked() || !isCell(cell) || isGiven(cell)) return false;
     if (!Number.isInteger(n) || n < 1 || n > CELL_COUNT) return false;
     state.undo.push({ cell, prev: state.grid[cell], next: n });
     write(cell, n);
@@ -147,13 +151,14 @@ export function useGame(
   }
 
   function clear(cell: Cell): boolean {
-    if (!isCell(cell) || isGiven(cell) || state.grid[cell] === 0) return false;
+    if (locked() || !isCell(cell) || isGiven(cell) || state.grid[cell] === 0) return false;
     state.undo.push({ cell, prev: state.grid[cell], next: 0 });
     write(cell, 0);
     return true;
   }
 
   function undo(): boolean {
+    if (locked()) return false;
     const move = state.undo.pop();
     if (!move) return false;
     write(move.cell, move.prev);
