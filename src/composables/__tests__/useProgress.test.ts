@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { fixturePuzzle } from '../../core/__fixtures__/level-fixture';
+import { FIXTURE_PATH, fixturePuzzle } from '../../core/__fixtures__/level-fixture';
 import type { SavedProgress } from '../../core/types';
 import { storageKey } from '../storage';
 import { MAX_PROGRESS_ENTRIES, useProgress } from '../useProgress';
@@ -61,6 +61,40 @@ describe('useProgress', () => {
     progress.save(99, 'easy', snap(iso(0)));
     expect(progress.has(99, 'easy')).toBe(true);
     expect(progress.has(1, 'easy')).toBe(false);
+  });
+
+  it('lastPlayed always points at a surviving save after eviction', () => {
+    const progress = useProgress(1);
+    for (let i = 1; i <= 20; i++) progress.save(i, 'easy', snap(iso(100 + i)));
+    // Re-save the oldest entry with an old savedAt: it becomes lastPlayed and must survive,
+    // while the next one to arrive evicts someone else.
+    progress.save(1, 'easy', snap(iso(0)));
+    expect(progress.lastPlayed()).toEqual({ levelId: 1, difficulty: 'easy', savedAt: iso(0) });
+    progress.save(50, 'easy', snap(iso(200)));
+    const last = progress.lastPlayed();
+    expect(last?.levelId).toBe(50);
+    expect(last && progress.has(last.levelId, last.difficulty)).toBe(true);
+    // Entry 1 now has the oldest savedAt and is the one evicted, not the lastPlayed target.
+    expect(progress.has(1, 'easy')).toBe(false);
+    expect(progress.has(2, 'easy')).toBe(true);
+  });
+
+  it('checks every given cell, not just the start (Review Focus 3)', () => {
+    // Givens: 8→1 plus the cells of 17, 19, 23 on FIXTURE_PATH.
+    const multi = fixturePuzzle([17, 19, 23]);
+    expect(multi.givens.size).toBe(4);
+    const full = new Array<number>(100).fill(0);
+    for (let k = 1; k <= FIXTURE_PATH.length; k++) full[FIXTURE_PATH[k - 1]] = k;
+
+    const progress = useProgress(1);
+    progress.save(5, 'advanced', snap(iso(0), { grid: [...full] }));
+    expect(progress.load(5, 'advanced', multi)?.grid).toEqual(full);
+
+    const bad = [...full];
+    bad[FIXTURE_PATH[23 - 1]] = 0; // only the last given (23) is wrong
+    progress.save(6, 'advanced', snap(iso(1), { grid: bad }));
+    expect(progress.load(6, 'advanced', multi)).toBeNull();
+    expect(progress.has(6, 'advanced')).toBe(false);
   });
 
   it('grid of length 99 → null and deleted (Review Focus 3)', () => {

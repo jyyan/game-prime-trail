@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { nextTick } from 'vue';
 import { SETTINGS_KEY } from '../storage';
 import { __resetSettings, useSettings } from '../useSettings';
 
@@ -18,13 +19,31 @@ describe('useSettings', () => {
     expect(useSettings()).toBe(useSettings());
   });
 
-  it('persists changes and a fresh instance reads them back', () => {
+  function stored(): unknown {
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null');
+  }
+
+  it('persists changes and a fresh instance reads them back', async () => {
     useSettings().inputMode.value = 'direct';
-    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? 'null')).toEqual({
-      inputMode: 'direct',
-      locale: 'zh-TW',
-    });
+    await nextTick();
+    expect(stored()).toEqual({ inputMode: 'direct', locale: 'zh-TW' });
     __resetSettings();
+    expect(useSettings().inputMode.value).toBe('direct');
+  });
+
+  it('a locale change triggers a write and is normalized to a supported locale', async () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ inputMode: 'direct', locale: 'zh-TW' }));
+    const s = useSettings();
+    localStorage.removeItem(SETTINGS_KEY);
+    // Only 'zh-TW' is supported today; force a change to prove the locale watcher writes.
+    s.locale.value = 'en' as 'zh-TW';
+    await nextTick();
+    expect(stored()).toEqual({ inputMode: 'direct', locale: 'zh-TW' });
+    s.locale.value = 'zh-TW';
+    await nextTick();
+    expect(stored()).toEqual({ inputMode: 'direct', locale: 'zh-TW' });
+    __resetSettings();
+    expect(useSettings().locale.value).toBe('zh-TW');
     expect(useSettings().inputMode.value).toBe('direct');
   });
 

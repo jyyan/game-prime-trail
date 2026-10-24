@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { storageKey } from '../storage';
 import { useRecords } from '../useRecords';
 
@@ -45,6 +45,42 @@ describe('useRecords', () => {
     expect(records.get(7, 'advanced')).toEqual(c.entry);
     expect(typeof c.entry.lastClearedAt).toBe('string');
     expect(Object.keys(records.all())).toEqual(['7:advanced']);
+  });
+
+  it('equal values are not a new best', () => {
+    const records = useRecords(1);
+    records.recordClear(2, 'easy', { elapsedMs: 5000, steps: 99, assisted: false });
+    const r = records.recordClear(2, 'easy', { elapsedMs: 5000, steps: 99, assisted: false });
+    expect(r.isNewBest).toEqual({ time: false, steps: false });
+    expect(r.entry).toMatchObject({ bestMs: 5000, bestSteps: 99, clears: 2 });
+  });
+
+  it('assisted clears after a normal clear leave the bests alone and keep counting', () => {
+    const records = useRecords(1);
+    records.recordClear(4, 'challenge', { elapsedMs: 9000, steps: 120, assisted: false });
+    const a1 = records.recordClear(4, 'challenge', { elapsedMs: 1000, steps: 99, assisted: true });
+    expect(a1.isNewBest).toEqual({ time: false, steps: false });
+    expect(a1.entry).toMatchObject({ bestMs: 9000, bestSteps: 120, clears: 1, assistedClears: 1 });
+    const a2 = records.recordClear(4, 'challenge', { elapsedMs: 500, steps: 99, assisted: true });
+    expect(a2.entry).toMatchObject({ bestMs: 9000, bestSteps: 120, clears: 1, assistedClears: 2 });
+    expect(records.completion(4, 'challenge')).toBe('cleared');
+    expect(records.get(4, 'challenge')).toEqual(a2.entry);
+  });
+
+  it('lastClearedAt is the ISO time of the latest clear, assisted or not', () => {
+    vi.useFakeTimers();
+    try {
+      const records = useRecords(1);
+      vi.setSystemTime(new Date('2026-10-01T00:00:00.000Z'));
+      const a = records.recordClear(3, 'easy', { elapsedMs: 1000, steps: 99, assisted: false });
+      expect(a.entry.lastClearedAt).toBe('2026-10-01T00:00:00.000Z');
+      vi.setSystemTime(new Date('2026-10-02T12:34:56.000Z'));
+      const b = records.recordClear(3, 'easy', { elapsedMs: 900, steps: 99, assisted: true });
+      expect(b.entry.lastClearedAt).toBe('2026-10-02T12:34:56.000Z');
+      expect(records.get(3, 'easy')?.lastClearedAt).toBe('2026-10-02T12:34:56.000Z');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('keys by difficulty', () => {

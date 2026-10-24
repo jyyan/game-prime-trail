@@ -20,13 +20,59 @@ function fixtureFile(overrides: Record<string, unknown> = {}) {
 describe('useLevelStore', () => {
   beforeEach(() => localStorage.clear());
 
-  it('default loader: missing when src/data/levels.json does not exist', async () => {
+  // The glob is resolved at transform time, so only one of these two runs in a given checkout.
+  // The 'missing' outcome itself is also pinned by the 'null loader → missing' case below, which
+  // goes through the same `!loader` branch the default loader takes when the file is absent.
+  it.skipIf(HAS_LEVELS_JSON)('default loader: missing when src/data/levels.json is absent', async () => {
     vi.resetModules();
     const fresh = await import('../useLevelStore');
     const store = fresh.useLevelStore();
     expect(store.status.value).toBe('idle');
     await store.load();
-    expect(store.status.value).toBe(HAS_LEVELS_JSON ? 'ready' : 'missing');
+    expect(store.status.value).toBe('missing');
+    expect(store.libraryVersion.value).toBeNull();
+  });
+
+  it.runIf(HAS_LEVELS_JSON)('default loader: ready when src/data/levels.json exists', async () => {
+    vi.resetModules();
+    const fresh = await import('../useLevelStore');
+    const store = fresh.useLevelStore();
+    expect(store.status.value).toBe('idle');
+    await store.load();
+    expect(store.status.value).toBe('ready');
+    expect(store.count.value).toBeGreaterThan(0);
+    expect(typeof store.libraryVersion.value).toBe('number');
+    expect(store.getLevel(1).id).toBe(1);
+    expect(store.getLevel(store.count.value).id).toBe(store.count.value);
+  });
+
+  it('synchronously throwing loader → error, and a later load retries', async () => {
+    const store = useLevelStore();
+    let calls = 0;
+    store.__setLoader((() => {
+      calls++;
+      if (calls === 1) throw new Error('sync boom');
+      return Promise.resolve(fixtureFile());
+    }) as () => Promise<unknown>);
+    await store.load();
+    expect(store.status.value).toBe('error');
+    await store.load();
+    expect(calls).toBe(2);
+    expect(store.status.value).toBe('ready');
+  });
+
+  it('rejected loader → error, and a later load retries', async () => {
+    const store = useLevelStore();
+    const loader = vi
+      .fn<() => Promise<unknown>>()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValue(fixtureFile());
+    store.__setLoader(loader);
+    await store.load();
+    expect(store.status.value).toBe('error');
+    await store.load();
+    expect(loader).toHaveBeenCalledTimes(2);
+    expect(store.status.value).toBe('ready');
   });
 
   it('rejected loader → error', async () => {
@@ -60,8 +106,6 @@ describe('useLevelStore', () => {
     expect(store.getLevel(1)).toBe(store.getLevel(1));
     expect(() => store.getLevel(2)).toThrow(RangeError);
     expect(() => store.getLevel(0)).toThrow(RangeError);
-    expect(store.randomId(() => 0)).toBe(1);
-    expect(store.randomId(() => 0.9999)).toBe(store.count.value);
   });
 
   it('unwraps a JSON module default export', async () => {

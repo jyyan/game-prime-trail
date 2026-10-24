@@ -49,7 +49,10 @@ function load(): Promise<void> {
   const run = loader;
   const gen = generation;
   status.value = 'loading';
-  inflight = (async () => {
+  // The loader may throw synchronously; `await` inside the async IIFE turns that into a rejection,
+  // and `inflight` is cleared via `.finally` on this exact promise so a body that settles before
+  // the assignment cannot leave a stale, already-settled promise behind.
+  const pending = (async () => {
     try {
       const parsed = parseLevelFile(unwrapModule(await run()));
       if (gen !== generation) return;
@@ -60,11 +63,13 @@ function load(): Promise<void> {
     } catch {
       if (gen !== generation) return;
       status.value = 'error';
-    } finally {
-      if (gen === generation) inflight = null;
     }
   })();
-  return inflight;
+  inflight = pending;
+  void pending.finally(() => {
+    if (inflight === pending) inflight = null;
+  });
+  return pending;
 }
 
 function getLevel(id: number): Level {
