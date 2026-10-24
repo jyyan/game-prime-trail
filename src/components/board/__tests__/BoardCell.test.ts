@@ -43,6 +43,20 @@ describe('BoardCell', () => {
     expect(mountCell().get('button').classes()).not.toContain('is-given');
   });
 
+  it('a player-filled value (non-given, value > 0) adds is-filled', () => {
+    expect(mountCell({ value: 42 }).get('button').classes()).toContain('is-filled');
+  });
+
+  it('given or empty cells do not get is-filled', () => {
+    expect(mountCell({ value: 42, given: true }).get('button').classes()).not.toContain(
+      'is-filled',
+    );
+    expect(mountCell({ value: 0 }).get('button').classes()).not.toContain('is-filled');
+    expect(mountCell({ value: 1, kind: 'start', given: true }).get('button').classes()).not.toContain(
+      'is-filled',
+    );
+  });
+
   it('value=0 renders empty text', () => {
     expect(mountCell({ value: 0 }).get('button').text()).toBe('');
   });

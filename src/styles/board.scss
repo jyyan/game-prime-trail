@@ -1,12 +1,17 @@
 // Prime Trail board (spec §6.1–§6.3, §9). Imported by GameBoard.vue.
 
-$pt-head-bg: #9e9e9e;
-$pt-prime-bg: #e0e0e0;
-$pt-cell-bg: #fff;
-$pt-conflict: #dc3545;
-$pt-grid-line: #6c757d;
-$pt-focus: #0d6efd;
-$pt-highlight: #ffc107;
+// Colours come from the design tokens in main.scss (UI refresh spec §3, §5.1); the PDF keeps its
+// own greyscale palette and does not read these. Ring colours are WCAG 1.4.11 non-text indicators
+// (≥ 3:1 against the cell fill), checked by scripts/check-contrast.ts.
+$pt-head-bg: var(--pt-primary);
+$pt-prime-bg: var(--pt-prime);
+$pt-cell-bg: var(--pt-surface);
+$pt-conflict: var(--pt-danger);
+$pt-grid-line: var(--pt-text-muted);
+$pt-focus: var(--pt-primary);
+$pt-head-ring: var(--pt-text);
+// Hint highlight ring: the old amber would vanish on the new yellow prime cells.
+$pt-highlight: var(--pt-hint);
 
 .pt-board {
   // 10 cells plus a half-cell outer band on each side = 11 cell units wide. The 26px floor keeps
@@ -36,9 +41,16 @@ $pt-highlight: #ffc107;
     touch-action: pan-y;
   }
 
+  // Clay board: the outer band reads as a rounded tray the grid sits on (§5.1).
+  background: var(--pt-surface);
+  border-radius: var(--pt-radius-card);
+  box-shadow: var(--pt-shadow-clay);
+
+  // Focus ring only for keyboard focus (§5.1); the clay shadow stays underneath it.
   &:focus-visible {
-    box-shadow: 0 0 0 2px $pt-focus;
-    border-radius: 4px;
+    box-shadow:
+      0 0 0 3px $pt-focus,
+      var(--pt-shadow-clay);
   }
 }
 
@@ -48,14 +60,19 @@ $pt-highlight: #ffc107;
   padding: 0;
   margin: 0;
   font: inherit;
+  font-family: var(--pt-font-num);
+  font-weight: 500;
   font-size: calc(var(--cell) * 0.42);
   font-variant-numeric: tabular-nums;
   line-height: 1;
   white-space: nowrap;
   user-select: none;
   -webkit-user-select: none;
-  color: #212529;
+  color: var(--pt-text);
   background: $pt-cell-bg;
+  --pt-ring-selected: #{$pt-focus};
+  --pt-ring-head: #{$pt-head-ring};
+  --pt-ring-conflict: #{$pt-conflict};
   --pt-w-selected: 0px;
   --pt-w-head: 0px;
   --pt-w-highlight: 0px;
@@ -67,10 +84,10 @@ $pt-highlight: #ffc107;
   // Earlier shadows paint on top; a ring with zero spread draws nothing. The last layer is the
   // grid line, drawn per cell so the outer band stays clear.
   box-shadow:
-    inset 0 0 0 var(--pt-w-selected) $pt-focus,
-    inset 0 0 0 var(--pt-r-head) #212529,
+    inset 0 0 0 var(--pt-w-selected) var(--pt-ring-selected),
+    inset 0 0 0 var(--pt-r-head) var(--pt-ring-head),
     inset 0 0 0 var(--pt-r-highlight) $pt-highlight,
-    inset 0 0 0 var(--pt-r-conflict) $pt-conflict,
+    inset 0 0 0 var(--pt-r-conflict) var(--pt-ring-conflict),
     inset 0 0 0 0.5px $pt-grid-line;
   display: flex;
   align-items: center;
@@ -85,10 +102,25 @@ $pt-highlight: #ffc107;
   &.is-start {
     background: $pt-head-bg;
     color: #fff;
+    // Blue, dark and red rings would vanish on the blue start cell (< 3:1), so swap them for
+    // colours that hold ≥ 3:1 on blue. The start cell can still conflict (a duplicate 1, or a 2
+    // that is not adjacent); its text then stays white and the underline carries the signal.
+    --pt-ring-selected: var(--pt-prime);
+    --pt-ring-head: var(--pt-surface);
+    --pt-ring-conflict: var(--pt-surface);
+
+    &.is-conflict {
+      color: #fff;
+    }
   }
 
   &.is-given {
     font-weight: 600;
+  }
+
+  // Player-entered numbers (value set, not given): blue, lighter weight (§5.1).
+  &.is-filled {
+    color: var(--pt-primary-strong);
   }
 
   // Selected / head / highlight / conflict each draw their own inset ring (§9: never colour alone).
