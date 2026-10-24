@@ -24,8 +24,6 @@
 - **R18 棋盤 aria-label 未帶衝突種類**【UX・低】：BoardCell 介面只有 `conflict: boolean`，螢幕閱讀器聽不到「數字重複」等原因；要補需擴充 BoardCell props（例如 `conflictKinds`）並使用 `conflict.*` 字串。來源 GAME-10。
 - **R19 棋盤拖曳只以 mock `elementFromPoint` 驗證**【測試・低】：jsdom 無版面；實際手機拖曳與 `scrollY` 不變留給 E1 Playwright 情境 3，狀態框線疊加也需在真瀏覽器目視。來源 GAME-10。
 - **R20 `GameBoard` 的 `pointerdown` 未檢查 `e.button`**【UX・低】：右鍵、中鍵也會 emit `press` 並開始接續拖曳；spec 未要求，D1 接線或 E1 時再決定是否只接受主鍵。layer-C 審查建議。來源 GAME-10。
-- **R21 `useProgress.lastPlayed()` 回傳原始值**【介面・低】：對應 progress 被刪時仍可能指向不存在的存檔；spec §7.5 要求首頁以 `has()` 判斷是否顯示「繼續上次」，D2 HomeView 須照做，或改由 `lastPlayed()` 自行過濾。來源 GAME-12。
-- **R22 `useLevelStore.randomId()` 在非 ready 時丟錯**【介面・低】：spec §6.6 說隨機在 1–1000 均勻抽；若 LevelPicker 要在題庫載入前就能抽號，需改為固定 1000 為上界或先 `load()`。D2 接線時處理。來源 GAME-12。
 - **R23 C4 測試強度不足**【測試・低】：layer-C 審查指出：`useSettings` 第二次寫入的斷言分不出 watcher 有沒有觸發；`useProgress` 的 `lastPlayed` 淘汰案例恆真、guard（`isSavedProgress`／`isLastPlayed`）沒有壞資料案例；`useRecords`／`useProgress` 的注入 `storage` 寫入失敗路徑沒測；`useLevelStore` 預設 loader 兩案依題庫檔存在與否必有一案 skip。不擋合併，之後補測。來源 GAME-12。
 - **R24 PDF 字型來源未釘版本**【可重現性・低】：`scripts/gen-pdf-font.ts` 從 google/fonts `main` 下載 `NotoSansTC[wght].ttf`，上游換版後重跑會得到不同子集。改成釘 commit 的 raw URL 並比對 SHA-256（目前 `864727d210d54f2537bbe23b3a839436c3992af72de9322af5270897246bd44f`）。來源 GAME-13。
 - **R25 子集字型 `name` 表仍寫 `Noto Sans TC Thin`**【整潔・低】：可變字型預設 instance 是 wght=100，harfbuzz 釘 400 時只改外框與 `usWeightClass`。jsPDF 以自訂 family 引用、不影響輸出；要乾淨可改寫 name 表或改用靜態 Regular 來源。來源 GAME-13。
@@ -38,9 +36,13 @@
 - **R32 已 assisted 的局重新開始後重新整理會失去輔助標記**【規格・低】：重開後尚未落子不寫存檔（避免 `lastPlayed` 指向空局），此時重新整理則 `assisted` 不保留（記憶體內仍在，存檔已依 §7.6 刪除）。若要保留，需在 spec §7.6 定義「空局但 assisted」的存檔方式。來源 GAME-16。
 - **R33 操作列「清除」語意未在 spec 定義**【UI・低】：接續模式等同撤回最後一格（undo），指定模式等同 Backspace（先刪 pending、空了才清選取格）；spec §9 只列按鈕名稱。來源 GAME-16。
 - **R34 D1 視圖層測試缺口**【測試・低】：layer-D 審查指出：session 層沒測「切模式時 pending 保留」；`main.ts` 呼叫 `installE2eHooks` 的接線未被測試執行（E1 會間接覆蓋）；PlayView 只測 ArrowDown／Tab 的按鍵轉發，Ctrl+Z、過關鎖盤、Modal 開啟時按鍵不作用於棋盤只在 session 單元測試。不擋合併。來源 GAME-16。
+- **R35 首頁紀錄不隨其他分頁即時更新**【UI・低】：HomeView 掛載時讀 localStorage，其他分頁寫入的紀錄與 `lastPlayed` 要重新整理才出現；要即時可監聽 `storage` 事件。來源 GAME-17。
+- **R36 D2 測試強度不足**【測試・低】：layer-D 審查指出：missing／error 文案以同一個 `t()` 比對、缺鍵時兩邊同為 fallback 仍會過；R22 的 ready 守門透過 UI 無法觸及、移除不會失敗；records／progress 隨 `libraryVersion` 變化與非 ready 的 fallback 沒測。不擋合併。來源 GAME-17。
 
 ## 已結
 
+- **R22 `useLevelStore.randomId()` 在非 ready 時丟錯**：HomeView 只在 `status==='ready'` 時呼叫 `store.randomId()`，上界為題庫 `count`。2026-10-25 GAME-17 合併。
+- **R21 `useProgress.lastPlayed()` 回傳原始值**：HomeView 以 `progress.has(lastPlayed.levelId, lastPlayed.difficulty)` 判斷 `canResume`，並測「lastPlayed 指向已不存在的存檔時隱藏繼續上次」；PlayView 端（GAME-16）也保證不讓 `lastPlayed` 指向空局。2026-10-25 GAME-17 合併。
 - **R7 spec §2.8 等價敘述漏前提**：C3 `useGame` 過關判斷改用 `isSolved`（填滿且 `isSolved` 才判勝，另有「填滿但解答錯誤不判勝」測試），2026-10-24 由 GAME-11 合併。spec §2.8 的前提敘述仍待日後同步。
 - **R1 建立專案骨架與測試骨架**：2026-10-24 由 taskboard GAME-2（plan Task A1）完成，commit 58338e8（合併見同日 merge commit）。DoD 三條指令可執行，測試 5 檔 29 案。
 - **R2 設定 taskboard 的 setupCommand 與網路策略**：2026-10-24 GAME-2 合併後設定 `setupCommand=pnpm install --frozen-lockfile`、`networkAllowed=true`（使用者同意開網路，不另備 pnpm store 快取）。
