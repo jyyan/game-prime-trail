@@ -1,0 +1,172 @@
+{
+  "spec": "docs/superpowers/specs/2026-10-25-ui-refresh.md",
+  "plan": "docs/superpowers/plans/2026-10-25-ui-refresh.md",
+  "layer": "U-B",
+  "base": "9e19d260176aa146bf3a00ee35a4235c957b1e79",
+  "setup": [
+    "pnpm install --frozen-lockfile"
+  ],
+  "dod": [
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm build"
+  ],
+  "tasks": [
+    {
+      "id": "U-B1",
+      "title": "遊戲頁：頂列、操作列分主次與更多選單、下一個數字、pending 移入資訊列（taskboard GAME-24；草稿用 GAME-24.md；結案 backlog R33 寫在草稿結案段）。另外修 GAME-23 留下的焦點環殘留：PlayView 掛載時以程式聚焦棋盤，Chrome 視為 focus-visible，載入即顯示藍框；改用 focus({ preventScroll: true, focusVisible: false })（滑鼠／觸控觸發與掛載時），鍵盤導覽仍要顯示焦點框，並補測試（e2e 可檢查載入後 .pt-board 不符合 :focus-visible、按 Tab 後符合）。e2e 用 repo 的 playwright.config.ts（port 4173／8788），同時有另一個任務在用 4273，不要碰；跑完不留殘留程序。spec §3 的 token 與 Bootstrap 覆寫已由 GAME-23 合併（含 --pt-hint #BE185D、$secondary #475569），只能引用不能改。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。截圖存 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/df415385-e9ec-477a-9191-d7ddcb42c063/scratchpad/uiux/，不 commit。",
+      "files": [
+        "src/views/PlayView.vue",
+        "src/components/game/PlayActions.vue",
+        "src/components/ui/StatusBar.vue",
+        "src/components/input/NumberPad.vue",
+        "src/components/board/GameBoard.vue",
+        "src/components/board/__tests__/GameBoard.test.ts",
+        "src/i18n/zh-TW/play.ts",
+        "src/i18n/zh-TW/status.ts",
+        "src/i18n/zh-TW/input.ts",
+        "src/views/__tests__/PlayView.test.ts",
+        "src/components/__tests__/StatusBar.test.ts",
+        "src/components/__tests__/NumberPad.test.ts",
+        "src/components/game/__tests__/PlayActions.test.ts",
+        "e2e/11-play-ui.spec.ts",
+        "e2e/helpers.ts",
+        "e2e/01-main-flow.spec.ts",
+        "e2e/02-direct-mode.spec.ts",
+        "e2e/03-mobile-drag.spec.ts",
+        "e2e/04-solution-assisted.spec.ts",
+        "e2e/05-restore.spec.ts",
+        "e2e/06-pdf.spec.ts",
+        "e2e/07-spa-fallback.spec.ts",
+        "e2e/08-trail-keyboard.spec.ts",
+        "e2e/09-solution-layout.spec.ts",
+        "e2e/10-small-screen.spec.ts",
+        "e2e/smoke.spec.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-24.md",
+        "docs/backlog/drafts/GAME-24.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/superpowers/**",
+        "src/core/**",
+        "src/data/**",
+        "src/pdf/**",
+        "scripts/**",
+        "src/styles/**",
+        "public/**",
+        "index.html",
+        "playwright.config.ts",
+        "src/views/HomeView.vue",
+        "src/components/picker/**",
+        "src/components/game/WinModal.vue",
+        "src/components/game/SolutionView.vue",
+        "src/components/game/PdfExportDialog.vue",
+        "src/components/board/BoardCell.vue",
+        "src/components/board/HeadMarker.vue",
+        "src/composables/**（只能 import）",
+        "src/i18n/zh-TW/ 下除 play／status／input 以外的命名空間",
+        "e2e/12-*"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/views/__tests__/PlayView.test.ts src/components/__tests__/StatusBar.test.ts src/components/__tests__/NumberPad.test.ts src/components/game/__tests__/PlayActions.test.ts src/components/board/__tests__/GameBoard.test.ts",
+        "pnpm exec tsx scripts/check-contrast.ts",
+        "pnpm test:e2e（全部 project 全綠，含新 e2e/11；涵蓋 plan Review Focus 1、2、5 與焦點環）"
+      ],
+      "planSection": "### Task U-B1"
+    },
+    {
+      "id": "U-B2",
+      "title": "首頁：hero、規則卡、難度說明、空白不報錯、找不到題庫插圖（taskboard GAME-25；草稿用 GAME-25.md；結案 backlog R30 寫在草稿結案段）。e2e 只跑自己的新檔，而且必須用 scratchpad 的隔離設定（port 4273），不得用 repo 的 playwright.config.ts、不得碰 4173／8788（另一個任務正在用）：/private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/df415385-e9ec-477a-9191-d7ddcb42c063/scratchpad/pw-ub2.config.ts。spec §3 的 token 與 Bootstrap 覆寫已由 GAME-23 合併（含 --pt-hint #BE185D、$secondary #475569），只能引用不能改。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。截圖存 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/df415385-e9ec-477a-9191-d7ddcb42c063/scratchpad/uiux/，不 commit。",
+      "files": [
+        "src/views/HomeView.vue",
+        "src/components/picker/LevelPicker.vue",
+        "src/components/picker/DifficultyPicker.vue",
+        "src/i18n/zh-TW/home.ts",
+        "src/i18n/zh-TW/picker.ts",
+        "src/views/__tests__/HomeView.test.ts",
+        "src/components/__tests__/LevelPicker.test.ts",
+        "src/components/__tests__/DifficultyPicker.test.ts",
+        "e2e/12-home-ui.spec.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-25.md",
+        "docs/backlog/drafts/GAME-25.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/superpowers/**",
+        "src/core/**",
+        "src/data/**",
+        "src/pdf/**",
+        "scripts/**",
+        "src/styles/**",
+        "public/**",
+        "index.html",
+        "playwright.config.ts",
+        "src/views/PlayView.vue",
+        "src/components/game/**",
+        "src/components/ui/**",
+        "src/components/input/**",
+        "src/components/board/**",
+        "src/composables/**（只能 import，例如 storage.ts）",
+        "src/i18n/zh-TW/ 下除 home／picker 以外的命名空間",
+        "e2e/ 下除 12-home-ui.spec.ts 以外的所有檔案"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/views/__tests__/HomeView.test.ts src/components/__tests__/LevelPicker.test.ts src/components/__tests__/DifficultyPicker.test.ts",
+        "pnpm exec tsx scripts/check-contrast.ts",
+        "pnpm exec playwright test --config /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/df415385-e9ec-477a-9191-d7ddcb42c063/scratchpad/pw-ub2.config.ts e2e/12-home-ui.spec.ts（desktop 與 mobile 全綠；涵蓋 plan Review Focus 4；跑完確認 4273 無殘留程序）"
+      ],
+      "planSection": "### Task U-B2"
+    },
+    {
+      "id": "U-B3",
+      "title": "過關視窗：插圖、大字成績、按鈕主次（taskboard GAME-26；草稿用 GAME-26.md）。GAME-23 發現：白字在 --pt-pink #EC4899 只有 3.53:1，新紀錄徽章必須用 ≥ 18.66px 粗體，或改用深色底（例如 --pt-hint #BE185D，白字 6.04:1），擇一並在日誌說明。不跑 e2e。spec §3 的 token 與 Bootstrap 覆寫已由 GAME-23 合併（含 --pt-hint #BE185D、$secondary #475569），只能引用不能改。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。截圖存 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/df415385-e9ec-477a-9191-d7ddcb42c063/scratchpad/uiux/，不 commit。",
+      "files": [
+        "src/components/game/WinModal.vue",
+        "src/i18n/zh-TW/win.ts",
+        "src/components/__tests__/WinModal.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-26.md",
+        "docs/backlog/drafts/GAME-26.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/superpowers/**",
+        "src/core/**",
+        "src/data/**",
+        "src/pdf/**",
+        "scripts/**",
+        "src/styles/**",
+        "public/**",
+        "index.html",
+        "playwright.config.ts",
+        "src/views/**",
+        "src/components/ 下除 game/WinModal.vue 與其測試以外",
+        "src/composables/**",
+        "src/i18n/zh-TW/ 下除 win 以外的命名空間",
+        "e2e/**"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/components/__tests__/WinModal.test.ts",
+        "pnpm exec tsx scripts/check-contrast.ts"
+      ],
+      "planSection": "### Task U-B3"
+    }
+  ],
+  "models": {
+    "implement": "opus",
+    "verify": "haiku",
+    "review": "sonnet",
+    "fix": "opus"
+  }
+}
