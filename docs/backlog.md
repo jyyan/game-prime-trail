@@ -25,6 +25,9 @@
 - **R18 棋盤 aria-label 未帶衝突種類**【UX・低】：BoardCell 介面只有 `conflict: boolean`，螢幕閱讀器聽不到「數字重複」等原因；要補需擴充 BoardCell props（例如 `conflictKinds`）並使用 `conflict.*` 字串。來源 GAME-10。
 - **R19 棋盤拖曳只以 mock `elementFromPoint` 驗證**【測試・低】：jsdom 無版面；實際手機拖曳與 `scrollY` 不變留給 E1 Playwright 情境 3，狀態框線疊加也需在真瀏覽器目視。來源 GAME-10。
 - **R20 `GameBoard` 的 `pointerdown` 未檢查 `e.button`**【UX・低】：右鍵、中鍵也會 emit `press` 並開始接續拖曳；spec 未要求，D1 接線或 E1 時再決定是否只接受主鍵。layer-C 審查建議。來源 GAME-10。
+- **R21 `useProgress.lastPlayed()` 回傳原始值**【介面・低】：對應 progress 被刪時仍可能指向不存在的存檔；spec §7.5 要求首頁以 `has()` 判斷是否顯示「繼續上次」，D2 HomeView 須照做，或改由 `lastPlayed()` 自行過濾。來源 GAME-12。
+- **R22 `useLevelStore.randomId()` 在非 ready 時丟錯**【介面・低】：spec §6.6 說隨機在 1–1000 均勻抽；若 LevelPicker 要在題庫載入前就能抽號，需改為固定 1000 為上界或先 `load()`。D2 接線時處理。來源 GAME-12。
+- **R23 C4 測試強度不足**【測試・低】：layer-C 審查指出：`useSettings` 第二次寫入的斷言分不出 watcher 有沒有觸發；`useProgress` 的 `lastPlayed` 淘汰案例恆真、guard（`isSavedProgress`／`isLastPlayed`）沒有壞資料案例；`useRecords`／`useProgress` 的注入 `storage` 寫入失敗路徑沒測；`useLevelStore` 預設 loader 兩案依題庫檔存在與否必有一案 skip。不擋合併，之後補測。來源 GAME-12。
 
 ## 已結
 
