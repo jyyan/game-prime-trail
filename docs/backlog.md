@@ -28,6 +28,10 @@
 - **R21 `useProgress.lastPlayed()` 回傳原始值**【介面・低】：對應 progress 被刪時仍可能指向不存在的存檔；spec §7.5 要求首頁以 `has()` 判斷是否顯示「繼續上次」，D2 HomeView 須照做，或改由 `lastPlayed()` 自行過濾。來源 GAME-12。
 - **R22 `useLevelStore.randomId()` 在非 ready 時丟錯**【介面・低】：spec §6.6 說隨機在 1–1000 均勻抽；若 LevelPicker 要在題庫載入前就能抽號，需改為固定 1000 為上界或先 `load()`。D2 接線時處理。來源 GAME-12。
 - **R23 C4 測試強度不足**【測試・低】：layer-C 審查指出：`useSettings` 第二次寫入的斷言分不出 watcher 有沒有觸發；`useProgress` 的 `lastPlayed` 淘汰案例恆真、guard（`isSavedProgress`／`isLastPlayed`）沒有壞資料案例；`useRecords`／`useProgress` 的注入 `storage` 寫入失敗路徑沒測；`useLevelStore` 預設 loader 兩案依題庫檔存在與否必有一案 skip。不擋合併，之後補測。來源 GAME-12。
+- **R24 PDF 字型來源未釘版本**【可重現性・低】：`scripts/gen-pdf-font.ts` 從 google/fonts `main` 下載 `NotoSansTC[wght].ttf`，上游換版後重跑會得到不同子集。改成釘 commit 的 raw URL 並比對 SHA-256（目前 `864727d210d54f2537bbe23b3a839436c3992af72de9322af5270897246bd44f`）。來源 GAME-13。
+- **R25 子集字型 `name` 表仍寫 `Noto Sans TC Thin`**【整潔・低】：可變字型預設 instance 是 wght=100，harfbuzz 釘 400 時只改外框與 `usWeightClass`。jsPDF 以自訂 family 引用、不影響輸出；要乾淨可改寫 name 表或改用靜態 Regular 來源。來源 GAME-13。
+- **R26 spec §6.9 與 PDF 實作介面不一致**【文件・低】：spec 寫 `renderPuzzlePdf({ level, difficulty, includeSolution })`、英文 fallback 在 `en.ts`；實作依 plan C5 為 `{ level, difficulty, includeSolution, labels, font }`、英文標籤在 `src/pdf/labels-en.ts`，i18n `pdf` 新增 `docTitle`、`exportFailed`。spec 該段可同步。來源 GAME-13。
+- **R27 C5 測試強度不足**【測試・中】：layer-C 審查指出：`usePdfExport` 沒有成功路徑（字型可用、走中文標籤、不跳 fallback toast）的案例；格子灰階斷言會被圖例的 `setFillColor` 滿足；解答頁未驗路徑順序與折線；龍頭三角形只數次數不驗方位；字型嵌入只驗 `%PDF-` 檔頭與大小。D1 接 PDF 前補較穩。來源 GAME-13。
 
 ## 已結
 
