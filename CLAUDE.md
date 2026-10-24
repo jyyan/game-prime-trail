@@ -87,6 +87,6 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 
 需要連續數小時的實作，走「spec → plan（相依層）→ 一層一個 workflow → 主 session 合併」：
 
-- plan 的每一層任務彼此獨立、各自有驗收指令。主 session 把一層的任務清單轉成 `.claude/workflows/implement-layer.js` 的 `args`（格式見 `docs/superpowers/plan-template.md` 末段），以 Workflow 工具啟動；啟動前確認 `/config` 的 Dynamic workflow size 允許該層的 agent 數。
+- plan 的每一層任務彼此獨立、各自有驗收指令。主 session 把一層的任務清單轉成 `.claude/workflows/implement-layer.js` 的 `args`（格式見 `docs/superpowers/plan-template.md` 末段），以 Workflow 工具啟動；啟動前確認 `/config` 的 Dynamic workflow size 允許該層的 agent 數。workflow 內的模型一律以 `args.models` 為準，不套用「開發流程規範」第 3 步依任務難度選模型的規則；需要較強模型時調整整層的 `args.models`。
 - workflow 內每個任務：實作（worktree）→ 獨立驗證（重跑驗收與 DoD）→ 三視角對抗式審查 → 最多兩輪修正；只建立分支 `layer-<層>/<任務>`，**不合併、不 push、不碰主分支**。
 - workflow 結束後主 session 逐一 `git diff <主分支>..layer-<層>/<任務>` 審查、合併、跑完整 DoD、寫 CLAUDE.LOG，再發下一層。中斷用 `resumeFromRunId` 接續。

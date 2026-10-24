@@ -87,3 +87,4 @@
 
 - `dod`：必填、不得為空陣列，逐字照抄 CLAUDE.md「完成定義」的指令鏈；兩邊不一致時以 CLAUDE.md 為準並先修正 args。
 - `setup`：選填，新 worktree 的依賴安裝指令；workflow 在實作、驗證、修正三個 agent 切到正確 commit 後各跑一次。不需安裝依賴的 repo 傳 `[]` 或省略。
+- `models`：workflow 一律以此為準（未給的角色用預設 implement／fix=sonnet、verify／review=haiku），不分任務難度；同一層若有需要較強模型的任務，把整層的 `implement`／`fix` 調高，或把該任務拆到另一層。
