@@ -1,6 +1,22 @@
-// Bootstrap variable overrides go here (before the imports).
+// Fredoka (UI refresh spec §1 U4): bundled locally, latin subset only — it is used for numbers,
+// timers and English titles; Chinese text keeps the system font stack.
+@import '@fontsource/fredoka/latin-500.css';
+@import '@fontsource/fredoka/latin-600.css';
+
+// Bootstrap variable overrides (UI refresh spec §3). Keep these hex values in step with the
+// `--pt-*` tokens below and with scripts/check-contrast.ts.
 $enable-shadows: false;
 $enable-gradients: false;
+
+$primary: #2563eb;
+$danger: #b91c1c;
+// Bootstrap's grey secondary (#6c757d) is only 4.3:1 on the new page background; use the muted
+// text token so outline-secondary buttons and secondary text stay ≥ 4.5:1.
+$secondary: #475569;
+$border-radius: 14px;
+$border-radius-lg: 20px;
+$body-bg: #eff6ff;
+$body-color: #1e293b;
 
 // Only the Bootstrap parts the app uses; Bootstrap JS is never loaded.
 @import 'bootstrap/scss/functions';
@@ -21,3 +37,80 @@ $enable-gradients: false;
 @import 'bootstrap/scss/close';
 @import 'bootstrap/scss/utilities';
 @import 'bootstrap/scss/utilities/api';
+
+// Design tokens (UI refresh spec §3). Components reference these, never raw colour values.
+:root {
+  --pt-bg: #eff6ff;
+  --pt-surface: #fff;
+  --pt-text: #1e293b;
+  --pt-text-muted: #475569;
+  --pt-primary: #2563eb;
+  --pt-primary-strong: #1d4ed8;
+  --pt-accent: #f59e0b;
+  --pt-pink: #ec4899;
+  --pt-success: #10b981;
+  --pt-danger: #b91c1c;
+  --pt-prime: #fde68a;
+  // Not in spec §3's table: the hint highlight ring on the board. Amber/pink are < 3:1 on the
+  // yellow prime cells, so a deep pink keeps the ring visible on white, yellow and blue alike.
+  --pt-hint: #be185d;
+  --pt-radius-card: 20px;
+  --pt-radius-btn: 14px;
+  --pt-shadow-clay:
+    0 6px 0 rgba(30, 41, 59, 0.08), 0 10px 24px rgba(37, 99, 235, 0.12),
+    inset 0 -3px 0 rgba(30, 41, 59, 0.06);
+  --pt-press-scale: 0.96;
+  --pt-dur: 180ms;
+  --pt-font-num: 'Fredoka', system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--pt-bg);
+  color: var(--pt-text);
+}
+
+// Opt-in utility for numbers / timers / English titles.
+.pt-num {
+  font-family: var(--pt-font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+// Clay buttons with a press bounce (§3, §4.2). `.pt-press` gives the same bounce to non-.btn
+// controls. Link-style and close buttons stay flat.
+.btn:not(.btn-link):not(.btn-close),
+.pt-press {
+  transition:
+    transform var(--pt-dur) ease-out,
+    color var(--pt-dur) ease-out,
+    background-color var(--pt-dur) ease-out,
+    border-color var(--pt-dur) ease-out,
+    box-shadow var(--pt-dur) ease-out;
+
+  &:active:not(:disabled):not(.disabled) {
+    transform: scale(var(--pt-press-scale));
+  }
+}
+
+// Filled buttons get the clay shadow; Bootstrap's focus ring (also a box-shadow) wins on focus.
+.btn-primary:not(:disabled):not(.disabled):not(:focus-visible),
+.btn-danger:not(:disabled):not(.disabled):not(:focus-visible),
+.btn-success:not(:disabled):not(.disabled):not(:focus-visible) {
+  box-shadow: var(--pt-shadow-clay);
+}
+
+.modal-content {
+  border: 0;
+  border-radius: var(--pt-radius-card);
+  box-shadow: var(--pt-shadow-clay);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:not(.btn-link):not(.btn-close),
+  .pt-press {
+    transition: none;
+
+    &:active:not(:disabled):not(.disabled) {
+      transform: none;
+    }
+  }
+}

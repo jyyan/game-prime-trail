@@ -38,6 +38,7 @@
 | `--pt-success` | `#10B981` | 完成標記 |
 | `--pt-danger` | `#B91C1C` | 衝突、破壞性動作（比 Bootstrap danger 深，才能在質數格底色上達 4.5:1） |
 | `--pt-prime` | `#FDE68A` | 質數格底色（柔和黃） |
+| `--pt-hint` | `#BE185D` | 提示高亮環（GAME-23 新增：琥珀與粉紅在黃色質數格上都不到 3:1） |
 | `--pt-radius-card` | `20px` | 卡片、對話框 |
 | `--pt-radius-btn` | `14px` | 按鈕 |
 | `--pt-shadow-clay` | `0 6px 0 rgba(30,41,59,.08), 0 10px 24px rgba(37,99,235,.12), inset 0 -3px 0 rgba(30,41,59,.06)` | 卡片與按鈕的黏土感陰影 |
@@ -45,7 +46,7 @@
 | `--pt-dur` | `180ms` | 微互動時長（ease-out） |
 | `--pt-font-num` | `'Fredoka', system-ui, sans-serif` | 數字、計時、英文標題 |
 
-- Bootstrap 變數覆寫：`$primary: #2563EB`、`$danger: #B91C1C`、`$border-radius: 14px`、`$border-radius-lg: 20px`、`$body-bg: #EFF6FF`、`$body-color: #1E293B`、`$font-size-base` 不變（16px）。
+- Bootstrap 變數覆寫：`$secondary: #475569`（GAME-23：Bootstrap 預設灰在新背景上只有 4.3:1）、`$primary: #2563EB`、`$danger: #B91C1C`、`$border-radius: 14px`、`$border-radius-lg: 20px`、`$body-bg: #EFF6FF`、`$body-color: #1E293B`、`$font-size-base` 不變（16px）。
 - 所有成對前景／背景在實作時以腳本驗對比 ≥ 4.5:1（大字 ≥ 3:1），結果寫進 CLAUDE.LOG。
 - `@media (prefers-reduced-motion: reduce)`：按下回彈、棋盤 shake、過關插圖動畫一律停用（shake 改成僅閃一次紅框）。
 

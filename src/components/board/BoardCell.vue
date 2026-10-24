@@ -23,6 +23,7 @@ const classes = computed(() => ({
   'is-start': props.kind === 'start',
   'is-prime': props.kind === 'prime',
   'is-given': props.given,
+  'is-filled': props.value > 0 && !props.given,
   'is-selected': props.selected,
   'is-head': props.head,
   'is-highlight': props.highlight,
