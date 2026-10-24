@@ -89,8 +89,10 @@ export function useGame(
       // Givens always win; useProgress has already rejected incompatible saves (spec 7.6).
       if (!puzzle.givens.has(cell)) initialGrid[cell] = saved.grid[cell] ?? 0;
     }
+    // Plan C3: 'playing', or 'idle' when the grid holds only givens. A finished game's save
+    // is deleted on win (spec 7.6), so no 'won' restore path is defined.
     const onlyGivens = initialGrid.every((n, cell) => (puzzle.givens.has(cell) ? true : n === 0));
-    initialStatus = onlyGivens ? 'idle' : isSolved(initialGrid, puzzle) ? 'won' : 'playing';
+    initialStatus = onlyGivens ? 'idle' : 'playing';
     timer.reset(saved.elapsedMs);
   } else {
     timer.reset(0);
@@ -128,17 +130,6 @@ export function useGame(
     state.grid = next;
   }
 
-  /** After any grid change: detect a win, or leave 'won' when the board no longer solves. */
-  function settle(): void {
-    if (isFull(state.grid) && isSolved(state.grid, puzzle)) {
-      state.status = 'won';
-      timer.stop();
-    } else if (state.status === 'won') {
-      state.status = 'playing';
-      timer.start();
-    }
-  }
-
   function place(cell: Cell, n: number): boolean {
     if (!isCell(cell) || isGiven(cell)) return false;
     if (!Number.isInteger(n) || n < 1 || n > CELL_COUNT) return false;
@@ -147,7 +138,11 @@ export function useGame(
     state.steps += 1;
     state.status = 'playing';
     timer.start();
-    settle();
+    // Spec 7.3: a full, solved grid after place wins and stops the timer.
+    if (isFull(state.grid) && isSolved(state.grid, puzzle)) {
+      state.status = 'won';
+      timer.stop();
+    }
     return true;
   }
 
@@ -155,7 +150,6 @@ export function useGame(
     if (!isCell(cell) || isGiven(cell) || state.grid[cell] === 0) return false;
     state.undo.push({ cell, prev: state.grid[cell], next: 0 });
     write(cell, 0);
-    settle();
     return true;
   }
 
@@ -163,7 +157,6 @@ export function useGame(
     const move = state.undo.pop();
     if (!move) return false;
     write(move.cell, move.prev);
-    settle();
     return true;
   }
 
@@ -204,8 +197,6 @@ export function useGame(
   }
 
   function select(cell: Cell | null): void {
-    if (cell !== null && !isCell(cell)) return;
-    if (cell !== state.selected) state.pending = '';
     state.selected = cell;
   }
 
@@ -234,9 +225,7 @@ export function useGame(
   }
 
   function setInputMode(m: InputMode): void {
-    if (m === state.inputMode) return;
     state.inputMode = m;
-    state.pending = '';
   }
 
   function toggleInputMode(): void {

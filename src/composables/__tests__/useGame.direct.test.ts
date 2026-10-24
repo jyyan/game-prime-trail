@@ -66,6 +66,8 @@ describe('useGame direct mode (easy)', () => {
     expect(game.confirmPending()).toBe(false);
     expect(game.state.grid[9]).toBe(2);
     expect(game.state.steps).toBe(0);
+    expect(game.state.pending).toBe('44'); // a rejected confirm keeps pending
+    game.reset();
     game.select(18);
     expect(game.confirmPending()).toBe(false); // pending empty
   });
@@ -133,11 +135,10 @@ describe('useGame direct mode (easy)', () => {
     expect(game.state.inputMode).toBe('direct');
   });
 
-  it('selecting another cell drops the pending input', () => {
-    game.select(18);
-    game.digit(7);
+  it('select sets selected and null clears it', () => {
     game.select(38);
-    expect(game.state.pending).toBe('');
     expect(game.state.selected).toBe(38);
+    game.select(null);
+    expect(game.state.selected).toBeNull();
   });
 });

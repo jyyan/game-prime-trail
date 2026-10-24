@@ -61,6 +61,17 @@ describe('useGame restore', () => {
     expect(game.state.status).toBe('idle');
   });
 
+  it('a save that already holds the full solution restores as playing with the timer paused', () => {
+    // Plan C3 defines only 'playing' / 'idle' on restore; won games delete their save (spec 7.6).
+    const solved = { ...savedAt30(), grid: Array.from(fixtureGrid(FIXTURE_PATH)), steps: 99 };
+    const game = useGame(level, 'challenge', solved, { timer });
+    expect(game.isFull.value).toBe(true);
+    expect(game.state.status).toBe('playing');
+    expect(timer.running.value).toBe(false);
+    vi.advanceTimersByTime(2000);
+    expect(game.elapsedMs.value).toBe(61_000);
+  });
+
   it('snapshot returns every field', () => {
     const game = useGame(level, 'challenge', savedAt30(), { timer });
     const snap = game.snapshot();

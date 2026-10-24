@@ -84,6 +84,42 @@ describe('useGame trail mode (challenge)', () => {
     expect(game.head.value).toBe(2);
   });
 
+  it('undo of a clear restores the previous number (prev != 0)', () => {
+    const game = newGame('challenge');
+    game.trailPress(cellOf(2));
+    game.trailPress(cellOf(3));
+    expect(game.clear(cellOf(3))).toBe(true);
+    expect(game.state.grid[cellOf(3)]).toBe(0);
+    expect(game.undo()).toBe(true);
+    expect(game.state.grid[cellOf(3)]).toBe(3);
+    expect(game.head.value).toBe(3);
+    expect(game.state.steps).toBe(2);
+  });
+
+  it('undo replays several moves in reverse order', () => {
+    const game = newGame('challenge');
+    expect(game.place(50, 7)).toBe(true);
+    expect(game.place(50, 9)).toBe(true); // overwrite: prev 7, next 9
+    expect(game.place(60, 4)).toBe(true);
+    expect(game.clear(50)).toBe(true); // prev 9, next 0
+    expect(game.state.undo.map((m) => [m.cell, m.prev, m.next])).toEqual([
+      [50, 0, 7],
+      [50, 7, 9],
+      [60, 0, 4],
+      [50, 9, 0],
+    ]);
+    expect(game.undo()).toBe(true);
+    expect([game.state.grid[50], game.state.grid[60]]).toEqual([9, 4]);
+    expect(game.undo()).toBe(true);
+    expect([game.state.grid[50], game.state.grid[60]]).toEqual([9, 0]);
+    expect(game.undo()).toBe(true);
+    expect([game.state.grid[50], game.state.grid[60]]).toEqual([7, 0]);
+    expect(game.undo()).toBe(true);
+    expect([game.state.grid[50], game.state.grid[60]]).toEqual([0, 0]);
+    expect(game.undo()).toBe(false);
+    expect(game.state.steps).toBe(3);
+  });
+
   it('undo on an empty stack returns false', () => {
     expect(newGame('challenge').undo()).toBe(false);
   });
@@ -148,9 +184,9 @@ describe('useGame trail mode (easy)', () => {
   it('hint points at the next reference cell when consistent', () => {
     const game = newGame('easy');
     game.trailPress(cellOf(4));
-    const h = game.hint();
-    expect(h).toEqual({ cell: level.cellOf[game.head.value], divergedAt: null });
-    expect(h?.cell).toBe(cellOf(6)); // 5 is a given, so head is already 5
+    expect(game.head.value).toBe(5); // 5 is a given, so head is already 5
+    // Expected cell spelled out from FIXTURE_PATH, independent of level.cellOf.
+    expect(game.hint()).toEqual({ cell: cellOf(6), divergedAt: null });
     expect(game.state.assisted).toBe(true);
   });
 
