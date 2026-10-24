@@ -7,7 +7,7 @@
 
 ## 開放
 
-- **R1 <!-- 填寫：一句話標題 -->**：<!-- 填寫：現況、為何還沒做、決策點或前置條件；有 spec 或盤點出處就連結 -->
+- **R1 建立專案骨架與測試骨架**：技術棧已定為 Vue 3 + TypeScript + Vite + Bootstrap 5、Vitest、部署 Cloudflare Workers static assets，但 repo 還沒有任何程式碼，CLAUDE.md 的 DoD 三條指令（`npm run typecheck`、`npm test`、`npm run build`）與 `npm run deploy` 都還不存在。要建立 `package.json` scripts、`vue-tsc`、Vitest + `@vue/test-utils`（至少一個冒煙測試）、`wrangler.jsonc`，並把 `.dev.vars` 寫進 `.gitignore`。前置：先走 brainstorming 產出骨架 spec 並經使用者確認。
 
 ## 已結
 

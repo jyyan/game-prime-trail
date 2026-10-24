@@ -4,7 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案
 
-<!-- 填寫：一段話說明這個 repo 是什麼、給誰用、技術棧與常用指令 -->
+game-prime-trail：網頁遊戲，玩法與目標玩家待第一份 spec 定義。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 npm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。專案骨架尚未建立（見 backlog R1），以下指令在骨架建好後生效：
+
+- `npm run dev`：Vite 開發伺服器
+- `npm run typecheck`：`vue-tsc --noEmit`
+- `npm test`：`vitest run`；單一檔 `npx vitest run <檔案路徑>`，單一案例加 `-t "<名稱>"`
+- `npm run build`：產出 `dist/`
+- `npm run deploy`：`npm run build && wrangler deploy`
 
 ## 權威文件（規劃與實作前必讀）
 
@@ -16,7 +22,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `docs/CLAUDE.LOG/` | 工作日誌，記「為什麼」 |
 | `docs/audits/` | 例行盤點規範與各輪紀錄 |
 | `docs/superpowers/repo-governance.md` | 本 repo 的 agent 治理操作指南（角色、補段落方法、日常節奏、`implement-layer`、`/rules-audit`、踩坑） |
-<!-- 填寫：本 repo 的總規格、架構決策、契約定義等權威文件，一列一份 -->
+
+總規格與架構決策文件尚未建立；第一份 spec 產出後在上表加列。
 
 遇規格衝突以權威文件為準、不自行發明；要改規格就改文件再改碼。
 
@@ -26,9 +33,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 每次合併進主分支前依序過的機械式閘門。agent 的自述不是閘門。
 
 1. **DoD 指令鏈**（見「完成定義」）：任何環境都要過，是最低門檻。
-2. **CI**：<!-- 填寫：有 CI 寫 workflow 檔路徑與各步驟；沒有就寫「無 CI，DoD 為唯一閘門」 -->
-3. **部署前檢查**：<!-- 填寫：build command 內的檢查、migration 核對等；沒有寫「無」 -->
-4. **結構性防漂移測試**：<!-- 填寫：守住不變量的測試，例如禁止 import 路徑、設定雙向比對；沒有寫「無」 -->
+2. **CI**：無 CI，DoD 為唯一閘門。
+3. **部署前檢查**：`npm run deploy` 前 DoD 須全綠；build 與 `wrangler deploy` 內無額外檢查。
+4. **結構性防漂移測試**：無。
 
 
 ## 開發流程規範（設計 → 確認 → 平行實作）
@@ -54,7 +61,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 改動完成前在 repo 根目錄依序跑，全綠才算完成；回報時貼每條指令輸出的 summary 行：
 
-<!-- 填寫：指令鏈，例如 `npm run typecheck` → `npm test` → `npm run build`；沒有測試框架的 repo 先寫語法檢查或 lint，並在 backlog 開一條「建立測試骨架」 -->
+1. `npm run typecheck`
+2. `npm test`
+3. `npm run build`
+
+骨架建立前（backlog R1）三條指令都不存在，只改文件的變更免跑；任何程式碼改動必須先完成 R1。
 
 
 ## 工作日誌與 backlog

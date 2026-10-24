@@ -27,7 +27,17 @@
 
 ## 基線指令
 
-<!-- 填寫：本 repo 取基線的實際指令，例如行數統計、`npm test 2>&1 | tail -6`、`npm audit --omit=dev | tail -3`、`git log --since='90 days ago' --name-only --format= | sort | uniq -c | sort -rn | head -15` -->
+```bash
+find src \( -name '*.ts' -o -name '*.vue' \) -not -path '*/node_modules/*' | xargs wc -l | tail -1   # 原始碼行數
+npm test 2>&1 | tail -6                                                                     # 測試檔數／案數／時間
+npm run build 2>&1 | tail -15                                                               # bundle 大小
+npm audit --omit=dev | tail -3
+npm outdated
+git log --since='90 days ago' --name-only --format= | sort | uniq -c | sort -rn | head -15  # 異動熱點
+git log --since='12 months ago' --format=%ad --date=format:%Y-%m | sort | uniq -c            # 每月 commit 節奏
+```
+
+無資料庫，不查 migration。
 
 ## 盤點面向（固定五軸，缺一軸即不算完整盤點）
 
@@ -39,36 +49,43 @@
 |---|---|---|
 | backlog 開放項目 | 讀 `docs/backlog.md`，逐條標「已結／開放」 | 開放項目連續兩次盤點沒動、或沒有決策點 |
 | agent 開發規範的矛盾與失效引用 | 執行 `/rules-audit`（讀 `docs/audits/prompt-inventory.md` 與所有規範檔） | 任何「直接矛盾」或「失效引用」未在上一輪裁定後處理 |
-| spec 與實作漂移 | <!-- 填寫 --> | <!-- 填寫 --> |
+| spec 與實作漂移 | 逐份讀 `docs/superpowers/specs/`，用 grep 對照 spec 點名的元件、路由、狀態與設定在 `src/` 是否存在且行為一致 | spec 描述的行為在碼中找不到或相反，且沒有對應 backlog 項 |
 
 ### 2. 程式碼健康度
 
 | 查什麼 | 怎麼查 | 紅燈 |
 |---|---|---|
-| <!-- 填寫：例如超大檔、重複邏輯、吞錯路徑 --> | | |
+| 超大檔 | `wc -l $(git ls-files 'src/*.ts' 'src/*.vue')`，看行數最大的幾個 | 單檔超過 400 行 |
+| 遊戲規則寫在元件內 | 讀 `.vue` 的 `<script setup>`，看規則計算是否抽成純 TS 模組 | 核心規則只能透過掛載元件才測得到 |
+| 吞錯路徑 | `grep -rnE 'catch *(\([^)]*\))? *\{ *\}' src` | 空 catch，或 catch 只 `console.log` 後繼續 |
+| 繞過 Vue 直接操作 DOM | `grep -rn -e 'document.querySelector' -e 'document.getElementById' src` | 元件內直接改 DOM 而非走反應式狀態 |
 
 ### 3. 測試缺口
 
 | 查什麼 | 怎麼查 | 紅燈 |
 |---|---|---|
-| <!-- 填寫：例如關鍵模組無測試、測試只測 happy path --> | | |
+| 關鍵模組無測試 | 列出 `src/` 的 `.ts` 模組，比對是否有對應 `*.spec.ts`／`*.test.ts` | 遊戲規則或狀態模組沒有任何測試 |
+| 測試只測 happy path | 讀核心模組的測試檔，找邊界值與失敗案例 | 核心模組只有成功路徑案例 |
 
 ### 4. 相依與建置
 
 | 查什麼 | 怎麼查 | 紅燈 |
 |---|---|---|
 | 漏洞與過期依賴 | 套件管理器的 audit／outdated 指令 | prod 端 high 以上漏洞 |
-| <!-- 填寫 --> | | |
+| bundle 大小 | `npm run build` 輸出的 chunk 大小（Bootstrap 是否整包引入） | Vite 出現 chunk size 警告，或總量比上輪增加 20% 以上 |
+| Wrangler 設定與版本 | 讀 `wrangler.jsonc` 的 `compatibility_date`，`npx wrangler --version` | `compatibility_date` 落後一年以上 |
 
 ### 5. 營運與安全
 
 | 查什麼 | 怎麼查 | 紅燈 |
 |---|---|---|
-| <!-- 填寫：例如秘密是否進 repo、部署設定漂移、權限守門 --> | | |
+| 秘密進 repo | `git grep -nIiE -e 'api[_-]?key *[:=]' -e 'secret *[:=]' -e 'token *[:=]' -e 'password *[:=]'`；`git ls-files '*.dev.vars' '*.env' '.env.*'` | 命中真實值，或 `.dev.vars`／`.env` 被追蹤 |
+| 秘密打包進前端 | `grep -rn 'import.meta.env.VITE_' src` | `VITE_` 變數裝了秘密（會進 bundle） |
+| 部署設定漂移 | `npx wrangler deployments list` 對照主分支 commit | 線上版本不是來自主分支，或 dashboard 改過設定未回寫 `wrangler.jsonc` |
 
 ## 刻意接受清單
 
-<!-- 填寫：已知但決定不修的項目，每項附出處，盤點時不再重提 -->
+目前無。
 
 ## 紀錄格式（`docs/audits/YYYY-MM-DD.md`）
 
