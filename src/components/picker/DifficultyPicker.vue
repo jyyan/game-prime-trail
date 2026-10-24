@@ -25,18 +25,23 @@ function bestParts(entry: RecordEntry | null): string[] {
 
 <template>
   <div class="pt-difficulty-picker d-grid gap-2" role="group" :aria-label="t('picker.difficulty')">
+    <!-- Name and one-line hint on the left; completion mark and best record on the right (UI refresh §5.2). -->
     <button
       v-for="d in DIFFICULTIES"
       :key="d"
       type="button"
-      class="btn d-flex justify-content-between align-items-center text-start"
+      class="btn pt-difficulty d-flex justify-content-between align-items-center gap-3 text-start"
       :class="d === modelValue ? 'btn-primary' : 'btn-outline-primary'"
       :data-difficulty="d"
       :aria-pressed="d === modelValue ? 'true' : 'false'"
       @click="emit('update:modelValue', d)"
     >
-      <span>
-        <span class="pt-completion me-1" :data-completion="completion[d]">
+      <span class="d-flex flex-column">
+        <span class="pt-difficulty-name">{{ t(`difficulty.${d}`) }}</span>
+        <small class="pt-difficulty-hint" data-difficulty-hint>{{ t(`picker.difficultyHint.${d}`) }}</small>
+      </span>
+      <span class="d-flex flex-column align-items-end text-end">
+        <span class="pt-completion" :data-completion="completion[d]">
           <template v-if="completion[d] === 'cleared'">
             <span aria-hidden="true">{{ MARK.cleared }}</span>
             <span class="visually-hidden">{{ t('picker.cleared') }}</span>
@@ -46,19 +51,22 @@ function bestParts(entry: RecordEntry | null): string[] {
             <small class="ms-1">{{ t('picker.assistedCleared') }}</small>
           </template>
         </span>
-        {{ t(`difficulty.${d}`) }}
+        <small class="pt-best pt-num" data-best>
+          <template v-if="bestParts(best[d]).length > 0">{{ bestParts(best[d]).join(' / ') }}</template>
+        </small>
       </span>
-      <small class="pt-best" data-best>
-        <template v-if="bestParts(best[d]).length > 0">{{ bestParts(best[d]).join(' / ') }}</template>
-      </small>
     </button>
   </div>
 </template>
 
 <style scoped>
-.pt-completion {
-  display: inline-block;
-  min-width: 1em;
+.pt-difficulty {
+  min-height: 3.5rem;
+  border-radius: var(--pt-radius-btn);
+}
+
+.pt-difficulty-name {
+  font-weight: 600;
 }
 
 .pt-best {

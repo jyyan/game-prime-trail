@@ -31,8 +31,13 @@ const validId = computed<number | null>(() => {
   return id !== null && Number.isInteger(id) && id >= 1 && id <= props.count ? id : null;
 });
 
-// Any id outside 1…count, the empty field included, disables "start" with a message (plan §C6).
-const showInvalid = computed(() => validId.value === null);
+// Set on blur or a start attempt, cleared while typing: the message waits until the player is
+// done with the field instead of flashing on every keystroke.
+const touched = ref(false);
+
+// An empty field only disables "start"; the message is for a value outside 1…count
+// (UI refresh spec §4.4, backlog R30).
+const showInvalid = computed(() => touched.value && props.modelValue !== null && validId.value === null);
 
 function perDifficulty<T>(pick: (id: number, d: Difficulty) => T, fallback: T): Record<Difficulty, T> {
   const id = validId.value;
@@ -57,10 +62,16 @@ const resumeLabel = computed(() =>
 function onInput(event: Event): void {
   const raw = (event.target as HTMLInputElement).value.trim();
   const id = raw === '' ? Number.NaN : Number(raw);
+  touched.value = false;
   emit('update:modelValue', Number.isFinite(id) ? id : null);
 }
 
+function onBlur(): void {
+  touched.value = true;
+}
+
 function start(): void {
+  touched.value = true;
   if (validId.value !== null) emit('start', validId.value, difficulty.value);
 }
 
@@ -74,21 +85,21 @@ function resume(): void {
     <button
       v-if="canResume && lastPlayed"
       type="button"
-      class="btn btn-success w-100 mb-3 d-flex justify-content-between"
+      class="btn btn-success pt-control w-100 mb-3 d-flex justify-content-between align-items-center"
       data-action="resume"
       @click="resume"
     >
       <span>{{ t('picker.resume') }}</span>
-      <span>{{ resumeLabel }}</span>
+      <span class="pt-num">{{ resumeLabel }}</span>
     </button>
 
-    <label :for="inputId" class="form-label">{{ t('picker.levelId') }}</label>
-    <div class="input-group mb-1">
+    <label :for="inputId" class="form-label fw-semibold">{{ t('picker.levelId') }}</label>
+    <div class="d-flex gap-2 mb-1">
       <input
         :id="inputId"
         type="number"
         inputmode="numeric"
-        class="form-control"
+        class="form-control pt-control pt-num"
         :class="{ 'is-invalid': showInvalid }"
         min="1"
         :max="count"
@@ -98,13 +109,37 @@ function resume(): void {
         :aria-invalid="showInvalid ? 'true' : 'false'"
         :aria-describedby="showInvalid ? errorId : undefined"
         @input="onInput"
+        @blur="onBlur"
         @keydown.enter="start"
       />
-      <button type="button" class="btn btn-outline-secondary" data-action="random" @click="emit('random')">
-        {{ t('picker.random') }}
+      <button
+        type="button"
+        class="btn btn-outline-secondary pt-control d-inline-flex align-items-center gap-1 flex-shrink-0"
+        data-action="random"
+        @click="emit('random')"
+      >
+        <svg
+          class="pt-dice"
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          aria-hidden="true"
+          focusable="false"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="4" />
+          <circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="8" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="8" cy="16" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="16" r="1.4" fill="currentColor" stroke="none" />
+        </svg>
+        <span>{{ t('picker.random') }}</span>
       </button>
     </div>
-    <div v-if="showInvalid" :id="errorId" class="text-danger small mb-2" data-invalid-id>
+    <div v-if="showInvalid" :id="errorId" class="text-danger small mb-2" role="alert" data-invalid-id>
       {{ t('picker.invalidId', { max: count }) }}
     </div>
 
@@ -117,7 +152,7 @@ function resume(): void {
 
     <button
       type="button"
-      class="btn btn-primary w-100"
+      class="btn btn-primary btn-lg pt-control w-100"
       data-action="start"
       :disabled="validId === null"
       @click="start"
@@ -126,3 +161,13 @@ function resume(): void {
     </button>
   </div>
 </template>
+
+<style scoped>
+.pt-control {
+  min-height: 44px;
+}
+
+.pt-dice {
+  flex-shrink: 0;
+}
+</style>

@@ -5,6 +5,12 @@ export const picker = {
   resume: '繼續上次',
   resumeLabel: '#{id}・{difficulty}',
   difficulty: '難度',
+  // One-line explanation under each difficulty name (UI refresh spec §5.2).
+  difficultyHint: {
+    easy: '顯示所有質數',
+    advanced: '只顯示部分質數',
+    challenge: '只有龍頭',
+  },
   best: '最佳紀錄',
   bestTime: '最快 {time}',
   bestSteps: '最少 {n} 步',

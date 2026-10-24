@@ -51,6 +51,12 @@ async function typeId(wrapper: Awaited<ReturnType<typeof mountHome>>, id: string
   await wrapper.find('input[data-level-id]').setValue(id);
 }
 
+// v-show toggles an inline `display: none`; read it directly (isVisible() is unreliable on detached mounts).
+function rulesShown(wrapper: Awaited<ReturnType<typeof mountHome>>): boolean {
+  const body = wrapper.find('[data-rules-body]');
+  return body.exists() && !(body.attributes('style') ?? '').includes('display: none');
+}
+
 describe('HomeView', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.restoreAllMocks());
@@ -122,11 +128,77 @@ describe('HomeView', () => {
     expect(wrapper.find('button[data-action="start"]').attributes('disabled')).toBeUndefined();
   });
 
-  it('shows levelMissing when the library is missing', async () => {
+  it('shows the missing illustration and explanation when the library is missing', async () => {
     const wrapper = await mountHome(null);
     expect(useLevelStore().status.value).toBe('missing');
     expect(wrapper.find('.pt-level-picker').exists()).toBe(false);
-    expect(wrapper.text()).toContain(t('play.levelMissing'));
+    const missing = wrapper.find('[data-state="missing"]');
+    expect(missing.text()).toContain(t('home.missingTitle'));
+    expect(missing.text()).toContain(t('home.missingBody'));
+    const img = missing.find('img[data-missing-img]');
+    expect(img.attributes('src')).toBe('/illustrations/missing.webp');
+    expect(img.attributes('alt')).toBe(t('home.missingAlt'));
+    expect(img.attributes('width')).toBeDefined();
+    expect(img.attributes('height')).toBeDefined();
+  });
+
+  it('renders the hero illustration, title and subtitle', async () => {
+    const wrapper = await mountHome();
+    const img = wrapper.find('img[data-hero]');
+    expect(img.attributes('src')).toBe('/illustrations/hero.webp');
+    expect(img.attributes('alt')).toBe(t('home.heroAlt'));
+    expect(img.attributes('width')).toBeDefined();
+    expect(img.attributes('height')).toBeDefined();
+    expect(wrapper.find('h1').text()).toBe('Prime Trail');
+    expect(wrapper.text()).toContain(t('home.subtitle'));
+  });
+
+  it('shows the three rules expanded by default', async () => {
+    const wrapper = await mountHome();
+    const toggle = wrapper.find('button[data-action="toggleRules"]');
+    expect(toggle.attributes('aria-expanded')).toBe('true');
+    const body = wrapper.find('[data-rules-body]');
+    expect(rulesShown(wrapper)).toBe(true);
+    expect(body.findAll('li').map((li) => li.text())).toEqual([t('home.rule1'), t('home.rule2'), t('home.rule3')]);
+    expect(toggle.attributes('aria-controls')).toBe(body.attributes('id'));
+  });
+
+  it('remembers the collapsed rules card in prime-trail:v1:ui', async () => {
+    localStorage.setItem('prime-trail:v1:ui', JSON.stringify({ other: 1 }));
+    const wrapper = await mountHome();
+    await wrapper.find('button[data-action="toggleRules"]').trigger('click');
+    expect(rulesShown(wrapper)).toBe(false);
+    expect(wrapper.find('button[data-action="toggleRules"]').attributes('aria-expanded')).toBe('false');
+    expect(JSON.parse(localStorage.getItem('prime-trail:v1:ui')!)).toEqual({ other: 1, rulesCollapsed: true });
+    wrapper.unmount();
+
+    const again = await mountHome();
+    expect(rulesShown(again)).toBe(false);
+    await again.find('button[data-action="toggleRules"]').trigger('click');
+    expect(rulesShown(again)).toBe(true);
+    expect(JSON.parse(localStorage.getItem('prime-trail:v1:ui')!)).toEqual({ other: 1, rulesCollapsed: false });
+  });
+
+  it('ignores a broken ui entry and keeps the rules expanded', async () => {
+    localStorage.setItem('prime-trail:v1:ui', '{oops');
+    const wrapper = await mountHome();
+    expect(rulesShown(wrapper)).toBe(true);
+  });
+
+  it('shows no error for the empty field on first load (R30)', async () => {
+    const wrapper = await mountHome();
+    expect(wrapper.find('button[data-action="start"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    await wrapper.find('input[data-level-id]').trigger('blur');
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+  });
+
+  it('shows the error for an out-of-range id after blur', async () => {
+    const wrapper = await mountHome(() => Promise.resolve(fixtureFile(3)));
+    await typeId(wrapper, '4');
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    await wrapper.find('input[data-level-id]').trigger('blur');
+    expect(wrapper.find('[data-invalid-id]').text()).toBe(t('picker.invalidId', { max: 3 }));
   });
 
   it('shows a load error when the library fails to parse', async () => {

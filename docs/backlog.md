@@ -29,7 +29,6 @@
 - **R27 C5 測試強度不足**【測試・中】：layer-C 審查指出：`usePdfExport` 沒有成功路徑（字型可用、走中文標籤、不跳 fallback toast）的案例；格子灰階斷言會被圖例的 `setFillColor` 滿足；解答頁未驗路徑順序與折線；龍頭三角形只數次數不驗方位；字型嵌入只驗 `%PDF-` 檔頭與大小。D1 接 PDF 前補較穩。來源 GAME-13。
 - **R28 `BsConfirmHost` 按鈕預設英文**【UI・低】：`okLabel`／`cancelLabel` 未給時顯示 `OK`／`Cancel`；D1 其他 `confirm()` 呼叫端（重新開始、看解答）要記得傳 `common.*`，或改由 BsConfirmHost 預設走 i18n。來源 GAME-14。
 - **R29 PDF 對話框對已 assisted 的局仍會確認**【UI・低】：plan 介面 `PdfExportDialog` 只有 `{ modelValue, gameStatus }`，已輔助的局勾「附解答頁」仍跳確認並再 emit `markAssisted`（冪等、多問一次）；若要依 §7.4「已 assisted 不再問」，需先改 plan 介面加 `assisted` prop。來源 GAME-14。
-- **R30 LevelPicker 空白欄位即顯示錯誤**【UI・低】：依 plan 字面，首頁初次載入欄位空白就顯示 `picker.invalidId`；若希望空白時只停用不提示，需先改 plan／spec。來源 GAME-14。
 - **R31 LevelPicker 有效 id 按 Enter 的路徑沒測**【測試・低】：只測了無效 id 按 Enter 不 emit；刪掉 `@keydown.enter` 測試仍會過。layer-C 審查建議。來源 GAME-14。
 - **R32 已 assisted 的局重新開始後重新整理會失去輔助標記**【規格・低】：重開後尚未落子不寫存檔（避免 `lastPlayed` 指向空局），此時重新整理則 `assisted` 不保留（記憶體內仍在，存檔已依 §7.6 刪除）。若要保留，需在 spec §7.6 定義「空局但 assisted」的存檔方式。來源 GAME-16。
 - **R34 D1 視圖層測試缺口**【測試・低】：layer-D 審查指出：session 層沒測「切模式時 pending 保留」；`main.ts` 呼叫 `installE2eHooks` 的接線未被測試執行（E1 會間接覆蓋）；PlayView 只測 ArrowDown／Tab 的按鍵轉發，Ctrl+Z、過關鎖盤、Modal 開啟時按鍵不作用於棋盤只在 session 單元測試。不擋合併。來源 GAME-16。
@@ -43,9 +42,12 @@
 - **R43 對比檢查與棋盤配色沒有進自動守門**【測試・低】：`scripts/check-contrast.ts` 不在任何 package.json script，DoD 不會跑；它只讀 `main.scss` token，`board.scss` 實際塗的環色、白字覆寫、黏土陰影與 `:focus-visible` 沒有測試，改壞不會有測試失敗。可把腳本加進 `pnpm test` 前置或寫成 vitest 測試，並讓它從 `board.scss` 取色。layer-U-A 審查建議。來源 GAME-23。
 - **R44 棋盤鍵盤焦點環靠 blur 再聚焦升級**【a11y・低】：棋盤以 `focusVisible: false` 聚焦後，Chrome 不會因按鍵改成 focus-visible，GameBoard 在第一個非修飾鍵時 blur 再以 `focusVisible: true` 重新聚焦，會多送一組 blur／focus 事件；日後在棋盤掛 focus／blur 處理要留意。來源 GAME-24。
 - **R45 U-B1 測試強度不足**【測試・低】：layer-U-B 審查指出：「下一個」測試只斷言大於前值而非精確值；掛載聚焦測試未驗 `focusVisible: false`（只有 e2e 涵蓋，且依賴 Chromium 支援）；GameBoard 焦點環測試 mock `matches`；e2e 11 的拒絕閃爍依賴約 300ms 計時，慢機可能 flaky。來源 GAME-24。
+- **R46 e2e 12「找不到題庫」只能在 dev server 跑**【測試・低】：靠動態 import 同一個 `useLevelStore` 單例並 `__setLoader(null)`，wrangler／build 版跑不了；要在正式 build 驗缺檔需在 `src/e2e-hooks.ts` 提供測試鉤子。來源 GAME-25。
+- **R47 U-B2／U-B3 測試強度不足**【測試・低】：layer-U-B 審查指出：首頁與過關視窗的文案斷言以同一個 `t()` 比對；LevelPicker blur 測試以 setProps 手動驅動；隨機鈕與主按鈕檢查依賴 class 名稱；WinModal 焦點測試未驗 `autofocus`、新紀錄徽章測試未驗字級／字重（對比要求所在）、插圖測試只比 src 字串。來源 GAME-25、GAME-26。
 
 ## 已結
 
+- **R30 LevelPicker 空白欄位即顯示錯誤**：首頁地圖編號空白時只停用「開始」、不顯示錯誤；有值且非法、blur 或 Enter 後才顯示。2026-10-25 GAME-25 合併。
 - **R33 操作列「清除」語意未在 spec 定義**：UI refresh 移除操作列「清除」，接續模式用「復原」、指定模式用數字鍵盤「清除」。2026-10-25 GAME-24 合併。
 - **R42 遊戲頁主棋盤在 320px 寬手機溢出**：`board.scss` 的 `--cell` 下限 30px → 26px；320px 視窗實測格寬 27.6px、無水平捲動，e2e/10-small-screen 守住。約 302px 以下仍會溢出（實際罕見）。2026-10-25 GAME-22 合併。
 - **R11 進階提示數可能全數卡在 ADV_FLOOR=6**：D4 正式題庫 hintCount 為 6:1000，進階難度張與張之間提示數無差異。2026-10-25 使用者裁定先接受、不調參。日後若要拉開差異，須調 `advFloor` 等參數、換 `generator` 版本字串並發新題庫版本（`libraryVersion` 2，舊紀錄依 §7.5 前綴隔離），另開任務。
