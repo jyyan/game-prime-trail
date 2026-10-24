@@ -15,6 +15,9 @@
 - **R8 BsModal 焦點圈限**【a11y・低】：目前只做開啟移入焦點、關閉歸還、Esc 關閉，Tab／Shift+Tab 仍能跳到背後的頁面元素；之後補 focus trap 或替背景加 `inert`。來源 GAME-8。
 - **R9 BsModal／BsConfirmHost 疊層焦點細節**【a11y・低】：(a) 較低層 Modal 先關閉時 teardown 仍無條件歸還焦點，會把焦點從頂層對話框移到背景；應只在頂層關閉時還原並處理失效目標。(b) 新 confirm 取代已顯示的請求時 modelValue 持續為 true，不會重新聚焦取消鈕；應依 `pending.id` 變更重新聚焦。兩者皆為 GAME-8 worker 審查建議，主 session 判定不擋合併。來源 GAME-8。
 - **R10 spec §10 i18n 檔案佈局與實作不一致**【文件・低】：spec §10 寫單檔 `src/i18n/zh-TW.ts`、命名空間含 `toast`；plan B5 與實作是 `src/i18n/zh-TW/<ns>.ts` 一命名空間一檔（app/common/difficulty/board/conflict/input/status/picker/win/solution/pdf/play/home），toast 文案放 `play.*`。使用者裁定（2026-10-24）：以實作（plan B5 的佈局）為準，暫不改 spec；後續任務讀到 spec §10 的 i18n 佈局時以實作為準。保留為文件債，日後同步 spec 時結案。來源 GAME-7。
+- **R11 進階提示數可能全數卡在 ADV_FLOOR=6**【設計・低】：C1 試跑 id 1–3 的 greedy 結果都是 6 個提示（floor 綁住），進階難度張與張之間沒有提示數差異。D4 跑完看 hintCount 分布；若幾乎全是 6，再決定是否接受或調 floor（調參要升 `generator` 版本字串並重跑）。來源 GAME-9。
+- **R12 spec §4.4 的 easy 丟棄率估計偏低**【文件・低】：試跑湊 3 個通過 easy 唯一的候選用了 9–22 次 attempt（丟棄率約 65–85%，spec 估 20–50%）。`maxAttemptsPerLevel = 200` 仍有餘裕，spec §4.4／§4.7 的數字應以 D4 實測更新。來源 GAME-9。
+- **R13 `src/data/levels.meta.jsonl` 是否 commit 未定**【流程・低】：它是續跑與 `--recompute` 的依據，也記錄每張的候選與耗時；D4 決定 commit 進 repo 或加進 `.gitignore`。來源 GAME-9。
 
 ## 已結
 
