@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案
 
-game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/2026-10-24-prime-trail-design.md`（草稿，待使用者確認）。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 pnpm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。專案骨架尚未建立（見 backlog R1），以下指令在骨架建好後生效：
+game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/2026-10-24-prime-trail-design.md`（草稿，待使用者確認）。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 pnpm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。本 repo **已登錄 taskboard**（專案 `game-prime-trail`，任務前綴 `GAME`），凡「已登錄 taskboard 的 repo」條件句一律適用：要做的工作開 taskboard 任務，`docs/backlog.md` 只管技術債與「之後再做」。專案骨架尚未建立（taskboard `GAME-1`，backlog R1），以下指令在骨架建好後生效：
 
 - `pnpm dev`：Vite 開發伺服器
 - `pnpm typecheck`：`vue-tsc --noEmit`
