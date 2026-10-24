@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 專案
 
-game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/2026-10-24-prime-trail-design.md`（草稿，待使用者確認）。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 npm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。專案骨架尚未建立（見 backlog R1），以下指令在骨架建好後生效：
+game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/2026-10-24-prime-trail-design.md`（草稿，待使用者確認）。技術棧為 Vue 3 + TypeScript + Vite + Bootstrap 5，測試用 Vitest + `@vue/test-utils`，套件管理器 pnpm；部署在 Cloudflare Workers（以 Workers static assets 發佈 `dist/`，設定檔 `wrangler.jsonc`）。專案骨架尚未建立（見 backlog R1），以下指令在骨架建好後生效：
 
-- `npm run dev`：Vite 開發伺服器
-- `npm run typecheck`：`vue-tsc --noEmit`
-- `npm test`：`vitest run`；單一檔 `npx vitest run <檔案路徑>`，單一案例加 `-t "<名稱>"`
-- `npm run build`：產出 `dist/`
-- `npm run deploy`：`npm run build && wrangler deploy`
+- `pnpm dev`：Vite 開發伺服器
+- `pnpm typecheck`：`vue-tsc --noEmit`
+- `pnpm test`：`vitest run`；單一檔 `pnpm vitest run <檔案路徑>`，單一案例加 `-t "<名稱>"`
+- `pnpm test:slow`：慢測（題庫重量檢查），不屬 DoD
+- `pnpm test:e2e`：Playwright，不屬 DoD，合併前人工跑
+- `pnpm build`：產出 `dist/`
+- `pnpm run deploy`：`pnpm build && wrangler deploy`；**不可寫 `pnpm deploy`**（pnpm 內建指令，會蓋掉同名 script）
 
 ## 權威文件（規劃與實作前必讀）
 
@@ -35,7 +37,7 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 
 1. **DoD 指令鏈**（見「完成定義」）：任何環境都要過，是最低門檻。
 2. **CI**：無 CI，DoD 為唯一閘門。
-3. **部署前檢查**：`npm run deploy` 前 DoD 須全綠；build 與 `wrangler deploy` 內無額外檢查。
+3. **部署前檢查**：`pnpm run deploy` 前 DoD 須全綠；build 與 `wrangler deploy` 內無額外檢查。
 4. **結構性防漂移測試**：無。
 
 
@@ -47,7 +49,7 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 2. **與使用者確認**：spec／計畫寫完先停下，向使用者說明範疇、取捨與拆分方式，**取得明確同意後**才進入實作；使用者若修改範疇，回到步驟 1 更新 spec，不邊做邊猜。
 3. **fan out 平行實作（subagent 或 workflow）**：確認後依計畫把彼此獨立的工作拆給 subagent 平行執行，複雜邏輯與跨模組契約改動用較強模型，範圍明確的頁面、測試、文件用較省的模型；主 session 留在原 session 做派工、審查與整合，**不親自實作**。派工 prompt 一律依 `docs/superpowers/dispatch-prompt.md` 的欄位組成，必附 spec 與 plan 章節、可動檔案、禁區、驗收指令與回報格式。
 
-**每個 subagent 各自在獨立 git worktree 內實作**，**禁止**兩個 agent 共用同一個 checkout：多個 agent 在同一工作區改檔會互搶檔案、互相覆蓋未 commit 的變更、typecheck 與測試也會彼此干擾。主 checkout 只做純文件小改與最終合併。worktree 內依本 repo 的套件管理器重新安裝依賴（例如 `npm ci`）或把 `node_modules` 寫進 `.git/info/exclude`，不要用符號連結（會被 `git add -A` 當檔案 commit）。派工 prompt 第一步必須要求 `git merge --ff-only <基底 commit>` 並回報 `git rev-parse HEAD`，因為工具開的 worktree 基底可能是遠端分支而非本機主分支。每個 agent 在自己的 worktree 內跑完 DoD 再回報，由主 session 逐一審 diff 後合併回主分支；合併衝突由主 session 處理，不讓 agent 互相 rebase。
+**每個 subagent 各自在獨立 git worktree 內實作**，**禁止**兩個 agent 共用同一個 checkout：多個 agent 在同一工作區改檔會互搶檔案、互相覆蓋未 commit 的變更、typecheck 與測試也會彼此干擾。主 checkout 只做純文件小改與最終合併。worktree 內依本 repo 的套件管理器重新安裝依賴（`pnpm install --frozen-lockfile`）或把 `node_modules` 寫進 `.git/info/exclude`，不要用符號連結（會被 `git add -A` 當檔案 commit）。派工 prompt 第一步必須要求 `git merge --ff-only <基底 commit>` 並回報 `git rev-parse HEAD`，因為工具開的 worktree 基底可能是遠端分支而非本機主分支。每個 agent 在自己的 worktree 內跑完 DoD 再回報，由主 session 逐一審 diff 後合併回主分支；合併衝突由主 session 處理，不讓 agent 互相 rebase。
 
 **同層任務的可動檔案集合必須兩兩不相交**。「只追加、不改既有行」擋不住衝突：兩個分支在同一個檔的同一錨點（路由表尾、import 區、`if`／`v-else-if` 鏈、檔尾）各自追加，git 一律報衝突，第二個合進主分支的就會衝。共用檔若非改不可，改法只有兩種：(a) 放到前一層的殘樁任務一次改完（型別、分支、登錄項先補齊，後層任務只填自己的新檔）；(b) 改成「一功能一檔、集中登錄」的結構（例如用 `import.meta.glob` 掃目錄組登錄表），讓新功能只新增檔案。主 session 合併同層分支時**固定在主 checkout 執行 `git merge --no-ff <任務分支>`、在主 checkout 解衝突**；不要把主分支合進任務分支再合回來，那會改變任務分支頂端，已登錄 taskboard 的 repo 會判定「交付後變動」而要求重驗。
 
@@ -62,9 +64,9 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 
 改動完成前在 repo 根目錄依序跑，全綠才算完成；回報時貼每條指令輸出的 summary 行：
 
-1. `npm run typecheck`
-2. `npm test`
-3. `npm run build`
+1. `pnpm typecheck`
+2. `pnpm test`
+3. `pnpm build`
 
 骨架建立前（backlog R1）三條指令都不存在，只改文件的變更免跑；任何程式碼改動必須先完成 R1。
 

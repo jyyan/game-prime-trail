@@ -29,10 +29,10 @@
 
 ```bash
 find src \( -name '*.ts' -o -name '*.vue' \) -not -path '*/node_modules/*' | xargs wc -l | tail -1   # 原始碼行數
-npm test 2>&1 | tail -6                                                                     # 測試檔數／案數／時間
-npm run build 2>&1 | tail -15                                                               # bundle 大小
-npm audit --omit=dev | tail -3
-npm outdated
+pnpm test 2>&1 | tail -6                                                                    # 測試檔數／案數／時間
+pnpm build 2>&1 | tail -15                                                              # bundle 大小
+pnpm audit --prod | tail -3
+pnpm outdated
 git log --since='90 days ago' --name-only --format= | sort | uniq -c | sort -rn | head -15  # 異動熱點
 git log --since='12 months ago' --format=%ad --date=format:%Y-%m | sort | uniq -c            # 每月 commit 節奏
 ```
@@ -72,8 +72,8 @@ git log --since='12 months ago' --format=%ad --date=format:%Y-%m | sort | uniq -
 | 查什麼 | 怎麼查 | 紅燈 |
 |---|---|---|
 | 漏洞與過期依賴 | 套件管理器的 audit／outdated 指令 | prod 端 high 以上漏洞 |
-| bundle 大小 | `npm run build` 輸出的 chunk 大小（Bootstrap 是否整包引入） | Vite 出現 chunk size 警告，或總量比上輪增加 20% 以上 |
-| Wrangler 設定與版本 | 讀 `wrangler.jsonc` 的 `compatibility_date`，`npx wrangler --version` | `compatibility_date` 落後一年以上 |
+| bundle 大小 | `pnpm build` 輸出的 chunk 大小（Bootstrap 是否整包引入） | Vite 出現 chunk size 警告，或總量比上輪增加 20% 以上 |
+| Wrangler 設定與版本 | 讀 `wrangler.jsonc` 的 `compatibility_date`，`pnpm wrangler --version` | `compatibility_date` 落後一年以上 |
 
 ### 5. 營運與安全
 
@@ -81,7 +81,7 @@ git log --since='12 months ago' --format=%ad --date=format:%Y-%m | sort | uniq -
 |---|---|---|
 | 秘密進 repo | `git grep -nIiE -e 'api[_-]?key *[:=]' -e 'secret *[:=]' -e 'token *[:=]' -e 'password *[:=]'`；`git ls-files '*.dev.vars' '*.env' '.env.*'` | 命中真實值，或 `.dev.vars`／`.env` 被追蹤 |
 | 秘密打包進前端 | `grep -rn 'import.meta.env.VITE_' src` | `VITE_` 變數裝了秘密（會進 bundle） |
-| 部署設定漂移 | `npx wrangler deployments list` 對照主分支 commit | 線上版本不是來自主分支，或 dashboard 改過設定未回寫 `wrangler.jsonc` |
+| 部署設定漂移 | `pnpm wrangler deployments list` 對照主分支 commit | 線上版本不是來自主分支，或 dashboard 改過設定未回寫 `wrangler.jsonc` |
 
 ## 刻意接受清單
 
