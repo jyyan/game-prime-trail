@@ -38,7 +38,7 @@ game-prime-trail：網頁遊戲，玩法與範疇見 `docs/superpowers/specs/202
 
 1. **DoD 指令鏈**（見「完成定義」）：任何環境都要過，是最低門檻。
 2. **CI**：無 CI，DoD 為唯一閘門。
-3. **部署前檢查**：`pnpm run deploy` 前 DoD 須全綠；build 與 `wrangler deploy` 內無額外檢查。
+3. **部署前檢查**：`pnpm run deploy` 前 DoD 須全綠，且 `pnpm test:slow` 全綠（部署發佈的就是凍結題庫）；build 與 `wrangler deploy` 內無額外檢查。步驟、部署後驗證清單與回滾見 `docs/deploy.md`；實際部署由人執行。
 4. **結構性防漂移測試**：無。
 
 
