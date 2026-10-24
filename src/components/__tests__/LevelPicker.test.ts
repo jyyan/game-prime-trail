@@ -29,14 +29,21 @@ function mountPicker(props: Partial<Props> = {}) {
 const startButton = (wrapper: ReturnType<typeof mountPicker>) => wrapper.find('button[data-action="start"]');
 
 describe('LevelPicker', () => {
-  it('disables start and explains an out-of-range id', () => {
+  it('disables start for an out-of-range id and explains it after blur', async () => {
     const wrapper = mountPicker({ modelValue: 0 });
     expect(startButton(wrapper).attributes('disabled')).toBeDefined();
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    await wrapper.find('input[data-level-id]').trigger('blur');
     expect(wrapper.find('[data-invalid-id]').text()).toBe('請輸入 1 到 1000 的地圖編號');
+    const field = wrapper.find('input[data-level-id]');
+    expect(field.classes()).toContain('is-invalid');
+    expect(field.attributes('aria-invalid')).toBe('true');
+    expect(field.attributes('aria-describedby')).toBe(wrapper.find('[data-invalid-id]').attributes('id'));
   });
 
   it('disables start for ids above count and non-integers', async () => {
     const wrapper = mountPicker({ modelValue: 1001 });
+    await wrapper.find('input[data-level-id]').trigger('blur');
     expect(startButton(wrapper).attributes('disabled')).toBeDefined();
     expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
     await wrapper.setProps({ modelValue: 2.5 });
@@ -47,10 +54,51 @@ describe('LevelPicker', () => {
     expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
   });
 
-  it('treats an empty field as an invalid id', () => {
+  it('disables start for an empty field without an error, even after blur or Enter (R30)', async () => {
     const wrapper = mountPicker({ modelValue: null });
+    const field = wrapper.find('input[data-level-id]');
     expect(startButton(wrapper).attributes('disabled')).toBeDefined();
-    expect(wrapper.find('[data-invalid-id]').text()).toBe('請輸入 1 到 1000 的地圖編號');
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    await field.trigger('blur');
+    await field.trigger('keydown', { key: 'Enter' });
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    expect(field.classes()).not.toContain('is-invalid');
+    expect(field.attributes('aria-invalid')).toBe('false');
+    expect(field.attributes('aria-describedby')).toBeUndefined();
+    expect(wrapper.emitted('start')).toBeUndefined();
+  });
+
+  it('waits for blur before showing the error for a typed invalid value', async () => {
+    const wrapper = mountPicker();
+    const field = wrapper.find('input[data-level-id]');
+    await field.setValue('0');
+    await wrapper.setProps({ modelValue: 0 });
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    await field.trigger('blur');
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
+    // Typing again hides the message until the next blur.
+    await field.setValue('5000');
+    await wrapper.setProps({ modelValue: 5000 });
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(false);
+    await field.trigger('blur');
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
+  });
+
+  it('shows the error when Enter is pressed on an invalid value', async () => {
+    const wrapper = mountPicker({ modelValue: 0 });
+    await wrapper.find('input[data-level-id]').trigger('keydown', { key: 'Enter' });
+    expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
+    expect(wrapper.emitted('start')).toBeUndefined();
+  });
+
+  it('labels the random button and keeps start as the only primary button', () => {
+    const wrapper = mountPicker({ modelValue: 5 });
+    const random = wrapper.find('button[data-action="random"]');
+    expect(random.text()).toBe('隨機');
+    expect(random.classes()).toContain('btn-outline-secondary');
+    expect(random.find('svg[aria-hidden="true"]').exists()).toBe(true);
+    const primaries = wrapper.findAll('button.btn-primary').filter((b) => b.attributes('data-difficulty') === undefined);
+    expect(primaries.map((b) => b.attributes('data-action'))).toEqual(['start']);
   });
 
   it('does not emit start for an invalid id, even via Enter', async () => {
@@ -97,6 +145,7 @@ describe('LevelPicker', () => {
     const [typed] = wrapper.emitted<[number | null]>('update:modelValue')![0];
     await wrapper.setProps({ modelValue: typed });
     expect(startButton(wrapper).attributes('disabled')).toBeDefined();
+    await wrapper.find('input[data-level-id]').trigger('blur');
     expect(wrapper.find('[data-invalid-id]').exists()).toBe(true);
   });
 

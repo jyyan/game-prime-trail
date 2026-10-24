@@ -84,6 +84,24 @@ describe('DifficultyPicker', () => {
     for (const item of wrapper.findAll('[data-best]')) expect(item.text()).toBe('');
   });
 
+  it('explains each difficulty in one line', () => {
+    const wrapper = mountPicker();
+    const hint = (d: Difficulty) => wrapper.find(`[data-difficulty="${d}"] [data-difficulty-hint]`).text();
+    expect(hint('easy')).toBe('顯示所有質數');
+    expect(hint('advanced')).toBe('只顯示部分質數');
+    expect(hint('challenge')).toBe('只有龍頭');
+  });
+
+  it('puts the completion mark after the name, on the right', () => {
+    const wrapper = mountPicker({ completion: { ...none, easy: 'cleared' } });
+    const button = wrapper.find('[data-difficulty="easy"]');
+    const [left, right] = button.element.children;
+    expect(left.textContent).toContain('簡單');
+    expect(left.querySelector('[data-completion]')).toBeNull();
+    expect(right.querySelector('[data-completion="cleared"]')).not.toBeNull();
+    expect(right.querySelector('[data-best]')).not.toBeNull();
+  });
+
   it('emits update:modelValue on click', async () => {
     const wrapper = mountPicker();
     await wrapper.find('[data-difficulty="advanced"]').trigger('click');
