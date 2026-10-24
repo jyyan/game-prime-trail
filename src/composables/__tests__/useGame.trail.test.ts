@@ -83,9 +83,11 @@ describe('useGame trail mode (challenge)', () => {
     expect(game.place(cellOf(100), 5)).toBe(false);
     expect(game.clear(cellOf(100))).toBe(false);
     expect(game.trailPress(cellOf(99))).toBe('rejected');
+    expect(game.trailStep('U')).toBe('rejected');
+    expect(game.trailStep('D')).toBe('rejected');
+    expect(game.trailStep('L')).toBe('rejected');
+    expect(game.trailStep('R')).toBe('rejected');
     expect(game.undo()).toBe(false);
-    game.select(cellOf(100));
-    game.backspace();
 
     expect(Array.from(game.state.grid)).toEqual(won);
     expect(game.state.status).toBe('won');
@@ -99,11 +101,38 @@ describe('useGame trail mode (challenge)', () => {
     expect(game.trailPress(cellOf(2))).toBe('placed');
   });
 
+  it('a full grid that is not the solution does not win', () => {
+    const game = newGame('challenge');
+    for (let n = 2; n <= 99; n++) expect(game.place(cellOf(n), n)).toBe(true);
+    // The last cell repeats 99, so the grid is full but holds a duplicate.
+    expect(game.place(cellOf(100), 99)).toBe(true);
+    expect(game.isFull.value).toBe(true);
+    expect(game.state.status).toBe('playing');
+    expect(timer.running.value).toBe(true);
+    const before = game.elapsedMs.value;
+    vi.advanceTimersByTime(1000);
+    expect(game.elapsedMs.value).toBe(before + 1000);
+  });
+
+  it('state.elapsedMs follows the running timer', () => {
+    const game = newGame('challenge');
+    game.trailPress(cellOf(2));
+    expect(game.state.elapsedMs).toBe(0);
+    vi.advanceTimersByTime(1000);
+    expect(game.state.elapsedMs).toBe(1000);
+    vi.advanceTimersByTime(750);
+    expect(game.state.elapsedMs).toBe(1750);
+  });
+
   it('undoing the only move keeps status playing and the timer running', () => {
     const game = newGame('challenge');
     game.trailPress(cellOf(2));
     expect(game.undo()).toBe(true);
     expect(game.head.value).toBe(1);
+    expect(game.state.steps).toBe(1);
+    for (let cell = 0; cell < 100; cell++) {
+      expect(game.state.grid[cell]).toBe(game.puzzle.givens.get(cell) ?? 0);
+    }
     expect(game.state.status).toBe('playing');
     expect(timer.running.value).toBe(true);
   });

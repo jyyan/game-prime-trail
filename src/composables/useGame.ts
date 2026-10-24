@@ -130,8 +130,8 @@ export function useGame(
     state.grid = next;
   }
 
-  // A won board is locked: place/clear/undo are rejected until reset(), so the cleared
-  // time and the solved grid stay as they were at the win (spec 7.3 stops the timer there).
+  // Spec 7.3: a won board is locked. place/clear/undo (and the trail/direct inputs built on
+  // them) are rejected until reset(); there is no won -> playing transition.
   const locked = (): boolean => state.status === 'won';
 
   function place(cell: Cell, n: number): boolean {
@@ -201,6 +201,7 @@ export function useGame(
     return place(target, head.value + 1) ? 'placed' : 'rejected';
   }
 
+  // Spec 7.3: select() and input mode switches keep pending; confirm fills the current selection.
   function select(cell: Cell | null): void {
     state.selected = cell;
   }

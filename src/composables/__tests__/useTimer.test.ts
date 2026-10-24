@@ -113,6 +113,28 @@ describe('useTimer', () => {
     expect(timer.elapsedMs.value).toBe(0);
   });
 
+  it('becoming visible does not restart a paused timer', () => {
+    timer.start();
+    vi.advanceTimersByTime(500);
+    timer.pause();
+    setHidden(true);
+    setHidden(false);
+    vi.advanceTimersByTime(1000);
+    expect(timer.running.value).toBe(false);
+    expect(timer.elapsedMs.value).toBe(500);
+  });
+
+  it('becoming visible does not restart a stopped timer', () => {
+    timer.start();
+    vi.advanceTimersByTime(500);
+    timer.stop();
+    setHidden(true);
+    setHidden(false);
+    vi.advanceTimersByTime(1000);
+    expect(timer.running.value).toBe(false);
+    expect(timer.elapsedMs.value).toBe(500);
+  });
+
   it('start() while hidden waits until visible', () => {
     setHidden(true);
     timer.start();

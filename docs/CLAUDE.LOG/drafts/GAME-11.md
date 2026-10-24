@@ -6,3 +6,4 @@
 - **由存檔恢復時 given 一律以題面為準**：`useProgress` 已負責丟棄不相容存檔（§7.6），這裡再覆寫一次 given 只是防禦；恢復後計時器 `reset(saved.elapsedMs)` 不啟動，等下一次 `place` 才開始（Review Focus 6）。
 - **`select()`／`setInputMode()` 只設值、不清 `pending`、不驗格號**：初版自行加了換格／切模式清 `pending`，spec §7.3 未提，審查判為自創而移除；無效格號由 `place` 拒絕即可。`confirmPending()` 失敗（given 格）時保留 `pending`。是否清空待 spec 補述（backlog 草稿）。
 - `hint()` 的 `divergedAt` 取「與參考路徑不一致的最小數字」，所在格以 `cellOfNumber`（重複時取最小格號）定位。
+- **第三輪：依使用者對 §7.3 的裁定定案，並補齊會抓到錯誤實作的測試**：使用者裁定「過關即鎖盤」（`won` 後所有改盤操作回 false、只有 `reset()` 解鎖、沒有 won→playing）與「`pending` 不因換格或切模式清空」，兩者與前一輪的保守實作一致，所以實作不需改，只把註解改指向 spec，backlog 草稿的三項待裁定（含「存檔已是完整解答」照 plan 處理）一併撤除。審查指出的問題在測試：原本的測試拿掉 `isSolved` 判斷、讓 `state.elapsedMs` 變成靜態值、讓換格清空 `pending`、或讓暫停／停止的計時器因分頁切回可見而重新計時，都仍然全綠，等於這些規則沒有被鎖住。這輪補的每個案例都以「暫時改壞實作、確認該案例轉紅」驗證過，目的在讓 D 層接 PlayView 時，任何違反 §7.3 的改動都會在 `pnpm test` 直接被擋下，而不是靠人工審查記得這些規則。指定模式也補了一路填到勝利的案例，因為勝負判定只寫在 `place` 內，需要證明經 `confirmPending` 進來的路徑同樣會判勝並停錶。
