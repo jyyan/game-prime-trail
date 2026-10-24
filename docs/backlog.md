@@ -38,6 +38,9 @@
 - **R35 首頁紀錄不隨其他分頁即時更新**【UI・低】：HomeView 掛載時讀 localStorage，其他分頁寫入的紀錄與 `lastPlayed` 要重新整理才出現；要即時可監聽 `storage` 事件。來源 GAME-17。
 - **R36 D2 測試強度不足**【測試・低】：layer-D 審查指出：missing／error 文案以同一個 `t()` 比對、缺鍵時兩邊同為 fallback 仍會過；R22 的 ready 守門透過 UI 無法觸及、移除不會失敗；records／progress 隨 `libraryVersion` 變化與非 ready 的 fallback 沒測。不擋合併。來源 GAME-17。
 - **R37 vitest 模組快取不察覺 `import.meta.glob` 新增的檔案**【工具・中】：題庫檔第一次出現時（例如 pull 到 GAME-18 之後），沿用舊的 `node_modules/.vitest-cache` 會讓 `src/data/__tests__` 報 `levels.json not found`；刪掉該目錄即可。可考慮在 vitest 設定關閉該快取、讓快取鍵納入 `src/data/` 檔案清單，或在 README／CLAUDE.md 註明。來源 GAME-18。
+- **R38 E2E 未涵蓋三條使用者裁定**【測試・低】：spec §7.3「過關即鎖盤」「pending 不因換格或切模式清空」與 §8「還有 n 格有錯，n 為紅格數」只有 Vitest 單元／元件測試；要在真瀏覽器守住，需先在 spec §12.3 增列情境再補 e2e。來源 GAME-19。
+- **R39 `pnpm test:e2e` 每次都啟動兩個 webServer**【測試・低】：只跑 desktop project 也要先 `pnpm build` 並起 `wrangler dev`（本機多 5–10 s）；可改以環境變數控制是否啟用 wrangler webServer／project。來源 GAME-19。
+- **R40 E2E 斷言強度不足**【測試・低】：layer-E 審查指出：03 的「不捲動」未確認頁面本身可捲動；04／06 的 `[data-also-valid]`、`[data-new-best]`、`[data-assisted]` 只有 `toHaveCount(0)` 的負向斷言，01 也沒有正向驗 `[data-new-best]`，選擇器寫錯仍會過；06 只驗 `%PDF` 檔頭；07 在 dev server 下恆回 index.html，只有 wrangler project 真的驗到 fallback。不擋合併。來源 GAME-19。
 
 ## 已結
 
