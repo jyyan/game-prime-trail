@@ -4,6 +4,7 @@ export const picker = {
   start: '開始',
   resume: '繼續上次',
   resumeLabel: '#{id}・{difficulty}',
+  difficulty: '難度',
   best: '最佳紀錄',
   bestTime: '最快 {time}',
   bestSteps: '最少 {n} 步',
