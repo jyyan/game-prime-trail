@@ -69,4 +69,12 @@ describe('StatusBar', () => {
     expect(badge.exists()).toBe(true);
     expect(badge.text()).toBe('輔助中・不列入最佳紀錄');
   });
+
+  it('styles the assisted badge with its own token class, not a missing Bootstrap helper', () => {
+    // GAME-27: .text-bg-* is not in the slimmed Bootstrap build, which left white text on white.
+    const wrapper = mount(StatusBar, { props: { ...base, assisted: true } });
+    const badge = wrapper.get('[data-assisted]');
+    expect(badge.classes()).toContain('pt-status-bar__assisted');
+    expect(badge.attributes('class')).not.toMatch(/text-bg-/);
+  });
 });

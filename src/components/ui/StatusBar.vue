@@ -73,7 +73,7 @@ onBeforeUnmount(clearRejectTimer);
       <span v-if="rejected" class="visually-hidden" data-pending-rejected>{{ t('status.pendingRejected') }}</span>
     </span>
     <span class="pt-status-bar__steps ms-auto" data-steps>{{ t('status.steps', { n: steps }) }}</span>
-    <span v-if="assisted" class="badge text-bg-warning" data-assisted>{{ t('status.assisted') }}</span>
+    <span v-if="assisted" class="badge pt-status-bar__assisted" data-assisted>{{ t('status.assisted') }}</span>
   </div>
 </template>
 
@@ -121,6 +121,14 @@ onBeforeUnmount(clearRejectTimer);
 
 .pt-status-bar__lead.is-rejected .pt-status-bar__pending {
   color: var(--pt-danger);
+}
+
+/* Bootstrap's colour helpers (.text-bg-*) are not in the slimmed stylesheet, so a bare .badge falls
+   back to white text on the white bar. Dark text on the soft prime yellow is ≥ 4.5:1 (GAME-27;
+   scripts/check-contrast.ts checks --pt-text on --pt-prime). */
+.pt-status-bar__assisted {
+  background-color: var(--pt-prime);
+  color: var(--pt-text);
 }
 
 .pt-status-bar__steps {
