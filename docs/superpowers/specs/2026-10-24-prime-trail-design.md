@@ -492,6 +492,9 @@ isFull: boolean;
 - **接續模式**：`press(cell)` 或 `drag(cell)` 時，若 `cell` 為空且與 `headCell` 相鄰 → `place(cell, head + 1)`；若 `cell` 等於數字 `head − 1` 的格且 head 的格非 given → `clear(headCell)`（拖回即退一步）；其他一律 no-op（給 150 ms 的 shake 動畫）。head 落在 given 時自動跳過：例如 1…7 已填且 11 為 given，填 8、9、10 後 head 直接變 11，下一步要從 11 的格延伸。**實體鍵盤（規劃者決定，依審查修訂）**：方向鍵 ↑↓←→ 讓 head 往該方向延伸一格（目標格須存在、為空且不是 given，否則拒絕並 shake）；Backspace/Delete 撤回最後一格（等同 `undo()` 最後一步）；Tab（或 UI 的切換鍵）切換輸入模式；`Ctrl/Cmd+Z` → undo。
 - **指定模式**：`press(cell)` 設 `selected`；`digit(d)` 把 d 接到 `pending`（**最多 3 字元**，使 100 可輸入；接上後數值 > 100 或前導 0 即忽略該鍵）；`confirm()`（螢幕鍵盤「確認」或 Enter）才 `place(selected, Number(pending))` 並清空 `pending`；**規劃者決定**：不自動確認，避免「1」與「10」的歧義。填入後 `selected` 留在原格不移動（「自動前進到相鄰空格」v1 不做）。實體鍵盤：數字鍵 → digit、Enter → confirm、Backspace/Delete → `pending` 非空則刪一字元，否則 `clear(selected)`、方向鍵移動 `selected`、Tab 切換輸入模式、`Ctrl/Cmd+Z` → undo。NumberPad 的 `pending` prop 型別同為最多 3 字元字串（§6.4）。
 - 步數定義（**規劃者決定**）：**steps = 成功 `place` 的次數**，含覆寫；清除與 undo 不計也不扣。理由：簡單、可比較、不懲罰反悔但懲罰亂填。
+- **過關即鎖盤（使用者裁定，2026-10-24）**：`status = 'won'` 後 `place`／`clear`／`undo`（含接續模式的 press／drag／方向鍵與指定模式的 confirm／backspace）一律拒絕、回傳 false，盤面、steps、計時器都不變；只有 `reset()` 解鎖並回到 `idle`。不存在 `won → playing` 的轉移。
+- **`pending` 不因換格或切模式清空（使用者裁定，2026-10-24）**：指定模式下 `select()` 換到別格、`setInputMode()`／`toggleInputMode()` 切換模式時，`pending` 原樣保留；之後 `confirm()` 填入當下的 `selected`。只有 `confirm()` 成功與 `backspace()` 會改變 `pending`。
+- 以存檔恢復時 `status` 照 §7.6 與 plan：grid 只有 given 為 `idle`，否則為 `playing`、計時器不啟動；即使存檔已是完整解答也一樣（正常流程過關即刪存檔，不會遇到）。
 
 ### 7.4 看解答與提示
 
