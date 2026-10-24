@@ -1,0 +1,105 @@
+{
+  "spec": "docs/superpowers/specs/2026-10-24-prime-trail-design.md",
+  "plan": "docs/superpowers/plans/2026-10-24-prime-trail.md",
+  "layer": "D",
+  "base": "32fac7a0ad8f850f929dd5fd1aa2341169eb89bb",
+  "setup": [
+    "pnpm install --frozen-lockfile"
+  ],
+  "dod": [
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm build"
+  ],
+  "tasks": [
+    {
+      "id": "D1",
+      "title": "PlayView 接線（輸入模式、鍵盤、回饋、恢復、過關、解答、PDF、E2E 鉤子）（taskboard GAME-16；草稿檔名用 GAME-16.md。注意：spec §7.3 已有使用者裁定「過關即鎖盤」「pending 不因換格或切模式清空」，useGame 已照做；docs/backlog.md 的 R21 首頁之外 progress.lastPlayed 可能指向不存在的存檔、R28 呼叫 confirm() 時要傳 okLabel/cancelLabel 為 t('common.confirm')/t('common.cancel')、R29 PdfExportDialog 只有 modelValue/gameStatus 兩個 props，接線時照現有介面，不得改 C 層元件）",
+      "files": [
+        "src/views/PlayView.vue",
+        "src/main.ts",
+        "src/i18n/zh-TW/play.ts",
+        "src/i18n/zh-TW/solution.ts",
+        "src/composables/usePlaySession.ts",
+        "src/components/game/SolutionView.vue",
+        "src/components/game/PlayActions.vue",
+        "src/e2e-hooks.ts",
+        "src/composables/__tests__/usePlaySession.test.ts",
+        "src/components/game/__tests__/SolutionView.test.ts",
+        "src/views/__tests__/PlayView.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-16.md",
+        "docs/backlog/drafts/GAME-16.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/core/**",
+        "src/router.ts",
+        "src/App.vue",
+        "src/data/**",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/superpowers/**",
+        "src/components/board/**",
+        "src/components/input/**",
+        "src/components/picker/**",
+        "src/components/ui/**",
+        "src/components/game/WinModal.vue",
+        "src/components/game/PdfExportDialog.vue",
+        "src/components/format.ts",
+        "src/views/HomeView.vue",
+        "src/composables/ 下除 usePlaySession.ts 以外的檔案",
+        "src/i18n/zh-TW/ 下除 play.ts、solution.ts 以外的命名空間",
+        "src/i18n/zh-TW/index.ts",
+        "src/pdf/**",
+        "scripts/**"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/composables/__tests__/usePlaySession.test.ts src/components/game/__tests__/SolutionView.test.ts src/views/__tests__/PlayView.test.ts"
+      ],
+      "planSection": "### Task D1"
+    },
+    {
+      "id": "D2",
+      "title": "HomeView 接線（選圖、隨機、紀錄標記、繼續上次）（taskboard GAME-17；草稿檔名用 GAME-17.md。注意：docs/backlog.md R21——「繼續上次」必須以 progress.has(lastPlayed.levelId, lastPlayed.difficulty) 判斷 canResume；R22——store.randomId() 在非 ready 時會丟錯，只在 status==='ready' 時呼叫；R30——LevelPicker 空白欄位會顯示錯誤訊息，照現狀不改元件）",
+      "files": [
+        "src/views/HomeView.vue",
+        "src/i18n/zh-TW/home.ts",
+        "src/views/__tests__/HomeView.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-17.md",
+        "docs/backlog/drafts/GAME-17.md"
+      ],
+      "forbidden": [
+        "CLAUDE.md",
+        "package.json",
+        "pnpm-lock.yaml",
+        "src/core/**",
+        "src/router.ts",
+        "src/App.vue",
+        "src/data/**",
+        "docs/backlog.md",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/superpowers/**",
+        "src/components/**",
+        "src/views/PlayView.vue",
+        "src/composables/**",
+        "src/main.ts",
+        "src/i18n/zh-TW/ 下除 home.ts 以外的命名空間",
+        "src/i18n/zh-TW/index.ts",
+        "src/pdf/**",
+        "scripts/**"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/views/__tests__/HomeView.test.ts"
+      ],
+      "planSection": "### Task D2"
+    }
+  ],
+  "models": {
+    "implement": "opus",
+    "verify": "haiku",
+    "review": "sonnet",
+    "fix": "opus"
+  }
+}
