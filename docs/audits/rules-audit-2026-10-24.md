@@ -110,3 +110,22 @@
 | R3 | `323f972` | CLAUDE.md:28 加「草稿 spec 不覆蓋本檔」 |
 
 套用後重跑機械盤點（`prompt-inventory.md`）：失效引用只剩 `@vue/test-utils`、`dist/` 兩個已知誤報（R10）。`docs/superpowers/plan-template.md` 的 args 範例仍寫 `npm run …`，屬範本檔、不在 R1 的三檔範疇內，未改。
+
+### 第二輪：使用者裁定 R4a R5a R6a R7a R8b
+
+| 編號 | commit | 內容 |
+|---|---|---|
+| R5、R6 | `532c880` | `implement-layer.js`：`dod` 必須是非空陣列；新增選填的 `args.setup`，實作、驗證、修正三個 agent 切到正確 commit 後都先跑安裝指令。`plan-template.md` 的 args 範例改 pnpm，並說明 `dod`、`setup` 兩個欄位。兩項動同一段程式，合成一個 commit |
+| R7 | `b77f892` | 新增 `.claude/settings.json`，`permissions.deny` 擋 `Bash(git push:*)`；CLAUDE.md 鐵則 3 註明此閘門 |
+| R8 | `867d5ae` | CLAUDE.md「長任務」段與 `plan-template.md` 註明：workflow 的模型以 `args.models` 為準 |
+| R4 | `1e41715` | 骨架完成後才處理，登錄為 backlog R2；taskboard `GAME-1` 留言：該任務要連網，不走 taskboard 派工 |
+
+驗證：`implement-layer.js` 以 mock 的 `agent`／`parallel`／`pipeline` 包成函式執行（scratchpad harness，未入 repo）。缺 `dod`、`dod: []`、`setup` 不是陣列三種情況都會在派工前丟錯；給 `setup` 時，implement、verify、fix 三個 prompt 都含安裝指令；不給 `setup` 時，三個 prompt 都不含。
+
+套用後重跑機械盤點：失效引用仍只有 `@vue/test-utils`、`dist/` 兩個已知誤報。
+
+本輪新觀察（未裁定，下次盤點處理）：
+
+- `implement-layer.js` 是範本檔，安裝腳本用 `copy_if_missing`，重跑不會蓋掉本地修改；但上游 studio-devops 的範本沒有這次的修正，其他 repo 仍有 R5、R6 的問題。
+- `.claude/commands/rules-audit.md` 第 5 步要求主 session 直接套用修正，與 CLAUDE.md「主 session 不親自實作、主 checkout 只做純文件小改」有張力。這次的 workflow 修改在主 checkout 內完成，因為使用者已明確指定套用。
+
