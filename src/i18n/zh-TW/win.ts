@@ -1,0 +1,13 @@
+export const win = {
+  title: '過關！',
+  titleAssisted: '輔助完成',
+  time: '時間 {time}',
+  steps: '步數 {n}',
+  newBestTime: '新的最快紀錄',
+  newBestSteps: '新的最少步數',
+  notRecorded: '本局不列入最佳紀錄',
+  viewSolution: '看參考解',
+  nextRandom: '隨機下一張',
+  backHome: '回首頁',
+  exportPdf: '匯出 PDF',
+} as const;
