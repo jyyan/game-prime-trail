@@ -14,7 +14,6 @@
 - **R8 BsModal 焦點圈限**【a11y・低】：目前只做開啟移入焦點、關閉歸還、Esc 關閉，Tab／Shift+Tab 仍能跳到背後的頁面元素；之後補 focus trap 或替背景加 `inert`。來源 GAME-8。
 - **R9 BsModal／BsConfirmHost 疊層焦點細節**【a11y・低】：(a) 較低層 Modal 先關閉時 teardown 仍無條件歸還焦點，會把焦點從頂層對話框移到背景；應只在頂層關閉時還原並處理失效目標。(b) 新 confirm 取代已顯示的請求時 modelValue 持續為 true，不會重新聚焦取消鈕；應依 `pending.id` 變更重新聚焦。兩者皆為 GAME-8 worker 審查建議，主 session 判定不擋合併。來源 GAME-8。
 - **R10 spec §10 i18n 檔案佈局與實作不一致**【文件・低】：spec §10 寫單檔 `src/i18n/zh-TW.ts`、命名空間含 `toast`；plan B5 與實作是 `src/i18n/zh-TW/<ns>.ts` 一命名空間一檔（app/common/difficulty/board/conflict/input/status/picker/win/solution/pdf/play/home），toast 文案放 `play.*`。使用者裁定（2026-10-24）：以實作（plan B5 的佈局）為準，暫不改 spec；後續任務讀到 spec §10 的 i18n 佈局時以實作為準。保留為文件債，日後同步 spec 時結案。來源 GAME-7。
-- **R11 進階提示數可能全數卡在 ADV_FLOOR=6**【設計・低】：C1 試跑 id 1–3 的 greedy 結果都是 6 個提示（floor 綁住），進階難度張與張之間沒有提示數差異。D4 跑完看 hintCount 分布；若幾乎全是 6，再決定是否接受或調 floor（調參要升 `generator` 版本字串並重跑）。來源 GAME-9。
 - **R12 spec §4.4 的 easy 丟棄率估計偏低**【文件・低】：試跑湊 3 個通過 easy 唯一的候選用了 9–22 次 attempt（丟棄率約 65–85%，spec 估 20–50%）。`maxAttemptsPerLevel = 200` 仍有餘裕，spec §4.4／§4.7 的數字應以 D4 實測更新。來源 GAME-9。
 - **R14 `readMeta` 的 `isRow` 未驗完整 MetaRow**【技術債・低】：`scripts/lib/meta.ts` 只驗部分欄位，缺 `candidates`／`nodes`／`attempt` 等欄位但 JSON 合法的行仍會覆蓋同 id 的有效舊行，續跑會遺失完成紀錄、`--recompute` 可能失敗。應完整驗證並補「壞行不覆蓋有效行」測試。GAME-9 worker 審查建議，主 session 判定不擋合併。來源 GAME-9。
 - **R15 `gen-levels.ts` 主流程缺整合測試**【測試・低】：目前測試只打 lib，未涵蓋續跑跳過已完成 id、過期 config 重生、多 worker 與分批輸出一致、`levels.json` 存在時 `--recompute` 退出碼 2。D4 正式跑前補上較穩（用暫存輸出路徑與小預算）。GAME-9 worker 審查建議。來源 GAME-9。
@@ -45,6 +44,7 @@
 
 ## 已結
 
+- **R11 進階提示數可能全數卡在 ADV_FLOOR=6**：D4 正式題庫 hintCount 為 6:1000，進階難度張與張之間提示數無差異。2026-10-25 使用者裁定先接受、不調參。日後若要拉開差異，須調 `advFloor` 等參數、換 `generator` 版本字串並發新題庫版本（`libraryVersion` 2，舊紀錄依 §7.5 前綴隔離），另開任務。
 - **R13 `src/data/levels.meta.jsonl` 是否 commit 未定**：依 plan D4 commit 進 repo（續跑與 `--recompute` 的依據）。2026-10-25 GAME-18 合併。
 - **R22 `useLevelStore.randomId()` 在非 ready 時丟錯**：HomeView 只在 `status==='ready'` 時呼叫 `store.randomId()`，上界為題庫 `count`。2026-10-25 GAME-17 合併。
 - **R21 `useProgress.lastPlayed()` 回傳原始值**：HomeView 以 `progress.has(lastPlayed.levelId, lastPlayed.difficulty)` 判斷 `canResume`，並測「lastPlayed 指向已不存在的存檔時隱藏繼續上次」；PlayView 端（GAME-16）也保證不讓 `lastPlayed` 指向空局。2026-10-25 GAME-17 合併。
