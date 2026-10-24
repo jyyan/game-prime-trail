@@ -20,6 +20,8 @@
 - **R13 `src/data/levels.meta.jsonl` 是否 commit 未定**【流程・低】：它是續跑與 `--recompute` 的依據，也記錄每張的候選與耗時；D4 決定 commit 進 repo 或加進 `.gitignore`。來源 GAME-9。
 - **R14 `readMeta` 的 `isRow` 未驗完整 MetaRow**【技術債・低】：`scripts/lib/meta.ts` 只驗部分欄位，缺 `candidates`／`nodes`／`attempt` 等欄位但 JSON 合法的行仍會覆蓋同 id 的有效舊行，續跑會遺失完成紀錄、`--recompute` 可能失敗。應完整驗證並補「壞行不覆蓋有效行」測試。GAME-9 worker 審查建議，主 session 判定不擋合併。來源 GAME-9。
 - **R15 `gen-levels.ts` 主流程缺整合測試**【測試・低】：目前測試只打 lib，未涵蓋續跑跳過已完成 id、過期 config 重生、多 worker 與分批輸出一致、`levels.json` 存在時 `--recompute` 退出碼 2。D4 正式跑前補上較穩（用暫存輸出路徑與小預算）。GAME-9 worker 審查建議。來源 GAME-9。
+- **R16 題庫雜湊與檔案格式兩處定義**【技術債・低】：C7 的 `src/data/__tests__/helpers.ts`（純 TS `sha256Hex`、`parseHashFile`）與 C1 的 `scripts/lib/assemble.ts`（`sha256Hex`、`writeLevelFiles` 兩行格式）各自實作。應補跨邊界測試斷言兩邊雜湊相同、C1 寫出的 hash 檔能被 `parseHashFile` 解析，或共用 `src/` 下的純 TS 版本。來源 GAME-15。
+- **R17 慢測生成參數寫成字面值**【技術債・低】：`src/data/__slow__/*.test.ts` 的 backbite 步數、端點上限、easy／advanced 預算、`ADV_FLOOR`、挑戰預算抄自 `scripts/gen-config.ts`。C1 已合併，應改為 import `GEN_CONFIG`。來源 GAME-15。
 
 ## 已結
 
