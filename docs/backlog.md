@@ -41,10 +41,10 @@
 - **R39 `pnpm test:e2e` 每次都啟動兩個 webServer**【測試・低】：只跑 desktop project 也要先 `pnpm build` 並起 `wrangler dev`（本機多 5–10 s）；可改以環境變數控制是否啟用 wrangler webServer／project。來源 GAME-19。
 - **R40 E2E 斷言強度不足**【測試・低】：layer-E 審查指出：03 的「不捲動」未確認頁面本身可捲動；04／06 的 `[data-also-valid]`、`[data-new-best]`、`[data-assisted]` 只有 `toHaveCount(0)` 的負向斷言，01 也沒有正向驗 `[data-new-best]`，選擇器寫錯仍會過；06 只驗 `%PDF` 檔頭；07 在 dev server 下恆回 index.html，只有 wrangler project 真的驗到 fallback。不擋合併。來源 GAME-19。
 - **R41 部署設定與快取標頭沒有自動檢查**【測試・低】：`public/_headers` 的規則與 SPA fallback 只在 E2 以手動 curl 驗過（見 CLAUDE.LOG GAME-20），`docs/deploy.md` 的部署後驗證是人工勾選；可加一個以 `wrangler dev` 跑 curl 的檢查腳本，或併入 E1 的 wrangler project。layer-E 審查建議。來源 GAME-20。
-- **R42 遊戲頁主棋盤在 320px 寬手機溢出**【版面・低】：`src/styles/board.scss` 的 `--cell` 下限 30px 讓棋盤最小 330px，320px 視窗會超出（spec §9）。可比照 GAME-21 把下限降到約 26px（(320 − 16) / 11 ≈ 27.6px）或改依容器寬計算，同時確認拖曳命中與觸控目標大小。來源 GAME-21。
 
 ## 已結
 
+- **R42 遊戲頁主棋盤在 320px 寬手機溢出**：`board.scss` 的 `--cell` 下限 30px → 26px；320px 視窗實測格寬 27.6px、無水平捲動，e2e/10-small-screen 守住。約 302px 以下仍會溢出（實際罕見）。2026-10-25 GAME-22 合併。
 - **R11 進階提示數可能全數卡在 ADV_FLOOR=6**：D4 正式題庫 hintCount 為 6:1000，進階難度張與張之間提示數無差異。2026-10-25 使用者裁定先接受、不調參。日後若要拉開差異，須調 `advFloor` 等參數、換 `generator` 版本字串並發新題庫版本（`libraryVersion` 2，舊紀錄依 §7.5 前綴隔離），另開任務。
 - **R13 `src/data/levels.meta.jsonl` 是否 commit 未定**：依 plan D4 commit 進 repo（續跑與 `--recompute` 的依據）。2026-10-25 GAME-18 合併。
 - **R22 `useLevelStore.randomId()` 在非 ready 時丟錯**：HomeView 只在 `status==='ready'` 時呼叫 `store.randomId()`，上界為題庫 `count`。2026-10-25 GAME-17 合併。

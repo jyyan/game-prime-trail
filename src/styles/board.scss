@@ -9,8 +9,10 @@ $pt-focus: #0d6efd;
 $pt-highlight: #ffc107;
 
 .pt-board {
-  // 10 cells plus a half-cell outer band on each side = 11 cell units wide.
-  --cell: clamp(30px, calc((100vw - 16px) / 11), 48px);
+  // 10 cells plus a half-cell outer band on each side = 11 cell units wide. The 26px floor keeps
+  // the board inside a 320px phone (PlayView gutter 8px each side: 11 × 26 = 286 ≤ 304); at 320px
+  // the fluid term already gives (320 − 16) / 11 ≈ 27.6px, the floor only bites below ~302px.
+  --cell: clamp(26px, calc((100vw - 16px) / 11), 48px);
   --pt-band: calc(var(--cell) / 2);
   --pt-marker: calc(var(--cell) * 0.3);
 
