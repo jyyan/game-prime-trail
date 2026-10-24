@@ -4,4 +4,5 @@ export const solution = {
   reference: '參考解',
   alsoValid: '你的解也合法',
   confirm: '看過解答後，這局不列入最佳紀錄。',
+  switchView: '切換顯示',
 } as const;

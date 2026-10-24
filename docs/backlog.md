@@ -35,6 +35,9 @@
 - **R29 PDF 對話框對已 assisted 的局仍會確認**【UI・低】：plan 介面 `PdfExportDialog` 只有 `{ modelValue, gameStatus }`，已輔助的局勾「附解答頁」仍跳確認並再 emit `markAssisted`（冪等、多問一次）；若要依 §7.4「已 assisted 不再問」，需先改 plan 介面加 `assisted` prop。來源 GAME-14。
 - **R30 LevelPicker 空白欄位即顯示錯誤**【UI・低】：依 plan 字面，首頁初次載入欄位空白就顯示 `picker.invalidId`；若希望空白時只停用不提示，需先改 plan／spec。來源 GAME-14。
 - **R31 LevelPicker 有效 id 按 Enter 的路徑沒測**【測試・低】：只測了無效 id 按 Enter 不 emit；刪掉 `@keydown.enter` 測試仍會過。layer-C 審查建議。來源 GAME-14。
+- **R32 已 assisted 的局重新開始後重新整理會失去輔助標記**【規格・低】：重開後尚未落子不寫存檔（避免 `lastPlayed` 指向空局），此時重新整理則 `assisted` 不保留（記憶體內仍在，存檔已依 §7.6 刪除）。若要保留，需在 spec §7.6 定義「空局但 assisted」的存檔方式。來源 GAME-16。
+- **R33 操作列「清除」語意未在 spec 定義**【UI・低】：接續模式等同撤回最後一格（undo），指定模式等同 Backspace（先刪 pending、空了才清選取格）；spec §9 只列按鈕名稱。來源 GAME-16。
+- **R34 D1 視圖層測試缺口**【測試・低】：layer-D 審查指出：session 層沒測「切模式時 pending 保留」；`main.ts` 呼叫 `installE2eHooks` 的接線未被測試執行（E1 會間接覆蓋）；PlayView 只測 ArrowDown／Tab 的按鍵轉發，Ctrl+Z、過關鎖盤、Modal 開啟時按鍵不作用於棋盤只在 session 單元測試。不擋合併。來源 GAME-16。
 
 ## 已結
 
