@@ -3,7 +3,7 @@
 - **起因**：plan `docs/superpowers/plans/2026-10-24-prime-trail.md` Task B6（taskboard GAME-8）。C、D 層的過關視窗、看解答／匯出 PDF 確認、「已恢復進度」Toast、「重新開始」確認都要用到 Modal／Toast／Confirm，但 Global Constraints 規定不 import Bootstrap JS，所以要自己寫，只借 Bootstrap 的 class。
 - **裁定（使用者）**：無（照 plan 介面實作）。
 - **做法**：
-  - `BsModal` 用 `v-if` 加 `<Teleport to="body">`，不做淡入淡出動畫：沒有 Bootstrap JS 就沒有 transition 事件可等，`v-if` 讓「關閉 = DOM 消失」可以同步測，`closed` 在清理完（body class、keydown listener、焦點歸還）後立刻 emit。
+  - `BsModal` 用 `v-if` 加 `<Teleport to="body">`，不做淡入淡出動畫：沒有 Bootstrap JS 就沒有 transition 事件可等，`v-if` 讓「關閉 = DOM 消失」可以同步測，清理（body class、keydown listener、焦點歸還）在 `modelValue` 變 false 時同步做完；`closed` 則延到下一個 `nextTick`，等對話框真的從 DOM 移除才 emit，因為 watcher 跑在移除對話框的那次 render 之前（審查第 1 輪的建議）。
   - 用模組層的開啟堆疊（`openStack`）而不是每個 instance 各自切 `modal-open`：疊兩層 Modal（例如過關視窗上再跳確認）時，關掉內層不會把 body 的捲動鎖拿掉，Esc 也只關最上層。堆疊同時決定視覺層級：每個 Modal 開啟時取「目前最上層 + 1」，依層數給 modal 與 backdrop 加 inline z-index（以 Bootstrap 的 1055／1050 為基準，每層 +10）。原因是 Teleport 在掛載時就在 body 放好錨點，DOM 順序跟著掛載順序走；App 層的確認 host 比頁面上的 Modal 早掛載，如果只靠 Bootstrap 固定的 z-index，晚開的確認框反而會被早開的頁面 Modal 蓋住、點不到（審查第 1 輪抓到的問題）。
   - 背景點擊用 `target === currentTarget` 判斷：真實瀏覽器的 `.modal` 疊在 `.modal-backdrop` 上方、會先吃到點擊，所以兩個元素都掛同一個 handler，從對話框內冒泡上來的點擊不算。
   - 初始焦點先找 `[autofocus]`，沒有才找第一個可聚焦元素：不然確認框的焦點會落在標頭的 × 鈕。`BsConfirmHost` 把 autofocus 放在取消鈕，誤按 Enter 不會執行「重新開始」這種破壞性動作。

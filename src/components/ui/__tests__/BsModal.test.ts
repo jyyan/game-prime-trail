@@ -101,13 +101,19 @@ describe('BsModal', () => {
     expect(document.body.querySelector('.modal-footer .foot')).not.toBeNull();
   });
 
-  it('removes modal-open and emits closed after closing', async () => {
-    const wrapper = mountModal({ modelValue: true });
+  it('removes modal-open and emits closed only after the dialog left the DOM', async () => {
+    const domAtClosed: (Element | null)[] = [];
+    const wrapper = mountModal({
+      modelValue: true,
+      onClosed: () => domAtClosed.push(document.body.querySelector('.modal')),
+    });
     await nextTick();
     await wrapper.setProps({ modelValue: false });
+    await nextTick();
     expect(document.body.classList.contains('modal-open')).toBe(false);
     expect(document.body.querySelector('.modal')).toBeNull();
     expect(wrapper.emitted('closed')).toHaveLength(1);
+    expect(domAtClosed).toEqual([null]);
   });
 
   it('moves focus into the dialog and restores it after closing', async () => {

@@ -108,7 +108,8 @@ watch(
     if (value) {
       void open();
     } else if (teardown()) {
-      emit('closed');
+      // This watcher runs before the render that removes the dialog; emit once it is gone.
+      void nextTick(() => emit('closed'));
     }
   },
   { immediate: true },
