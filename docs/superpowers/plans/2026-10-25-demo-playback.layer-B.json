@@ -1,0 +1,69 @@
+{
+  "spec": "docs/superpowers/specs/2026-10-25-demo-playback.md",
+  "plan": "docs/superpowers/plans/2026-10-25-demo-playback.md",
+  "layer": "B",
+  "base": "fe5f76fe9cdaf73af86467c1f0ce7954e704daa1",
+  "setup": [
+    "pnpm install --frozen-lockfile"
+  ],
+  "dod": [
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm build"
+  ],
+  "tasks": [
+    {
+      "id": "B1",
+      "title": "示範 AI 核心（taskboard GAME-33；草稿用 docs/CLAUDE.LOG/drafts/GAME-33.md、docs/backlog/drafts/GAME-33.md）。A1 的 src/core/dead-end.ts 已在基底（findDeadEnd、trailOf），只呼叫不改。使用者看過的一次性試作在 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/f392cf40-c9d8-4e27-a8e2-4f83ac0b5ac4/scratchpad/spike/ai.js（純 JS，可讀來對照搜尋與卡住原因的行為，但介面、檔案與測試以 plan 為準，不要照抄）。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。",
+      "files": [
+        "src/core/demo-solver.ts",
+        "src/core/__tests__/demo-solver.test.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-33.md",
+        "docs/backlog/drafts/GAME-33.md"
+      ],
+      "forbidden": [
+        "src/core/dead-end.ts",
+        "src/core/solver.ts",
+        "src/components/",
+        "src/views/",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/backlog.md"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/core/__tests__/demo-solver.test.ts"
+      ],
+      "planSection": "### Task B1"
+    },
+    {
+      "id": "B2",
+      "title": "遊戲頁接上死路標示與過關連線（taskboard GAME-34；草稿用 docs/CLAUDE.LOG/drafts/GAME-34.md、docs/backlog/drafts/GAME-34.md）。基底已有 A1 src/core/dead-end.ts（trailOf、findDeadEnd）與 A2 的 GameBoard props marks／trail、CellMark（src/components/board/marks.ts）、i18n deadEnd.*（far 用 {v}{dist}{steps}；noMove 用 {n} = h+1）。e2e 用 repo 的 playwright.config.ts，同層沒有其他 e2e 任務；跑完不留殘留程序。375／1280 截圖（死路標示、過關連線）存 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/f392cf40-c9d8-4e27-a8e2-4f83ac0b5ac4/scratchpad/uiux/，不 commit，並目視確認 ✕、虛線框、連線與角落數字的外觀（backlog R51），結果寫進 CLAUDE.LOG 草稿。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。",
+      "files": [
+        "src/views/PlayView.vue",
+        "src/views/__tests__/PlayView.test.ts",
+        "e2e/16-dead-end-trail.spec.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-34.md",
+        "docs/backlog/drafts/GAME-34.md"
+      ],
+      "forbidden": [
+        "src/core/",
+        "src/components/",
+        "src/composables/",
+        "src/i18n/",
+        "e2e/helpers.ts",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/backlog.md"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/views/__tests__/PlayView.test.ts",
+        "pnpm exec playwright test e2e/16-dead-end-trail.spec.ts"
+      ],
+      "planSection": "### Task B2"
+    }
+  ],
+  "models": {
+    "implement": "opus",
+    "verify": "haiku",
+    "review": "sonnet",
+    "fix": "opus"
+  }
+}
