@@ -235,7 +235,7 @@ function openPdf(): void {
           :grid="state.grid"
           :conflicts="game.conflicts.value"
           :selected="state.inputMode === 'direct' ? state.selected : null"
-          :head="state.inputMode === 'trail' ? game.headCell.value : null"
+          :head="state.inputMode === 'trail' && winTrail === null ? game.headCell.value : null"
           :highlight="highlight"
           :mode="state.inputMode"
           :readonly="won"

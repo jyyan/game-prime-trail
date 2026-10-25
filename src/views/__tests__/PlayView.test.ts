@@ -726,12 +726,26 @@ describe('PlayView: completed line', () => {
     const wrapper = await mountAt('/play/1/easy');
     expect(trailProp(wrapper)).toEqual([...FIXTURE_PATH]);
     expect(wrapper.find('svg.pt-trail polyline').exists()).toBe(true);
+    expect(wrapper.findComponent(GameBoard).props('head') ?? null).toBeNull();
+    expect(wrapper.find('.is-head').exists()).toBe(false);
   });
 
   it('an unfinished board has no line', async () => {
     const wrapper = await mountAt('/play/1/easy');
     await pressPath(wrapper, 99);
     expect(trailProp(wrapper)).toBeNull();
+  });
+
+  it('trail mode: the head frame follows the head until the win, then is gone', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    const headProp = () => wrapper.findComponent(GameBoard).props('head') ?? null;
+    await pressPath(wrapper, 99);
+    expect(headProp()).not.toBeNull();
+    expect(wrapper.find('.is-head').exists()).toBe(true);
+    await pressPath(wrapper, 100);
+    expect(winModal()).not.toBeNull();
+    expect(headProp()).toBeNull();
+    expect(wrapper.find('.is-head').exists()).toBe(false);
   });
 });
 
