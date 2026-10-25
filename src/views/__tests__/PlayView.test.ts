@@ -726,6 +726,8 @@ describe('PlayView: completed line', () => {
     const wrapper = await mountAt('/play/1/easy');
     expect(trailProp(wrapper)).toEqual([...FIXTURE_PATH]);
     expect(wrapper.find('svg.pt-trail polyline').exists()).toBe(true);
+    expect(wrapper.findComponent(GameBoard).props('head') ?? null).toBeNull();
+    expect(wrapper.find('.is-head').exists()).toBe(false);
   });
 
   it('an unfinished board has no line', async () => {
