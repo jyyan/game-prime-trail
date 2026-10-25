@@ -54,6 +54,11 @@ $body-color: #1e293b;
   // Not in spec §3's table: the hint highlight ring on the board. Amber/pink are < 3:1 on the
   // yellow prime cells, so a deep pink keeps the ring visible on white, yellow and blue alike.
   --pt-hint: #be185d;
+  // Demo / dead-end overlay (demo-playback spec §5.3, §5.4, §6.2). Trail = PDF PATH_RGB.
+  --pt-trail: #3465a4;
+  --pt-dead-bg: #fee2e2;
+  --pt-dead-line: #b91c1c;
+  --pt-branch-line: #2563eb;
   --pt-radius-card: 20px;
   --pt-radius-btn: 14px;
   --pt-shadow-clay:

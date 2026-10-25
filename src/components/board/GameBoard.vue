@@ -6,6 +6,8 @@ import { t } from '../../i18n';
 import '../../styles/board.scss';
 import BoardCell from './BoardCell.vue';
 import HeadMarker from './HeadMarker.vue';
+import type { CellMark } from './marks';
+import TrailLine from './TrailLine.vue';
 
 const SHAKE_MS = 150;
 
@@ -18,6 +20,10 @@ const props = defineProps<{
   highlight: Cell | null;
   mode: InputMode;
   readonly: boolean;
+  /** Optional cell marks (dead-end hint, demo). Not passed: no extra classes. */
+  marks?: ReadonlyMap<Cell, CellMark>;
+  /** trail[k-1] = cell of k, length 100; non-null draws TrailLine and moves numbers to the corner. */
+  trail?: readonly Cell[] | null;
 }>();
 
 const emit = defineEmits<{
@@ -229,6 +235,9 @@ defineExpose({ shake, focus });
       :highlight="highlight === c.cell"
       :conflict="c.conflict"
       :shake="shakeCell === c.cell"
+      :mark="marks?.get(c.cell)"
+      :trail="trail != null"
     />
+    <TrailLine v-if="trail" :trail="trail" />
   </div>
 </template>

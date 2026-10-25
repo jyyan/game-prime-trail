@@ -104,3 +104,36 @@ describe('BoardCell', () => {
     expect(mountCell().get('button').attributes('tabindex')).toBe('-1');
   });
 });
+
+describe('BoardCell marks and trail', () => {
+  it('default has no mark/trail classes', () => {
+    const btn = mountCell().get('button');
+    expect(btn.classes().join(' ')).not.toMatch(/is-mark|is-trail/);
+    expect(btn.find('span').exists()).toBe(false);
+  });
+
+  it.each([
+    ['reject', '不能放'],
+    ['trap', '會被困住的格子'],
+    ['branch', '退回的分歧點'],
+  ] as const)('mark=%s adds class and appends aria text', (mark, text) => {
+    const btn = mount(BoardCell, { props: { ...base, mark } }).get('button');
+    expect(btn.classes()).toContain(`is-mark-${mark}`);
+    expect(btn.attributes('aria-label')).toContain(text);
+  });
+
+  it('trail adds is-trail and keeps the number text', () => {
+    const btn = mount(BoardCell, { props: { ...base, value: 7, trail: true } }).get('button');
+    expect(btn.classes()).toContain('is-trail');
+    expect(btn.text()).toBe('7');
+    expect(btn.get('span.pt-num-corner').text()).toBe('7');
+  });
+
+  it('without trail the number is a bare text node with the original surrounding whitespace', () => {
+    const btn = mount(BoardCell, { props: { ...base, value: 7 } }).get('button');
+    expect(btn.find('.pt-num-corner').exists()).toBe(false);
+    expect(btn.element.textContent).toBe(' 7 ');
+    const empty = mount(BoardCell, { props: { ...base, value: 0 } }).get('button');
+    expect(empty.element.textContent).toBe('  ');
+  });
+});

@@ -39,13 +39,16 @@
 - **R39 `pnpm test:e2e` 每次都啟動兩個 webServer**【測試・低】：只跑 desktop project 也要先 `pnpm build` 並起 `wrangler dev`（本機多 5–10 s）；可改以環境變數控制是否啟用 wrangler webServer／project。來源 GAME-19。
 - **R40 E2E 斷言強度不足**【測試・低】：layer-E 審查指出：03 的「不捲動」未確認頁面本身可捲動；04／06 的 `[data-also-valid]`、`[data-new-best]`、`[data-assisted]` 只有 `toHaveCount(0)` 的負向斷言，01 也沒有正向驗 `[data-new-best]`，選擇器寫錯仍會過；06 只驗 `%PDF` 檔頭；07 在 dev server 下恆回 index.html，只有 wrangler project 真的驗到 fallback。不擋合併。來源 GAME-19。
 - **R41 部署設定與快取標頭沒有自動檢查**【測試・低】：`public/_headers` 的規則與 SPA fallback 只在 E2 以手動 curl 驗過（見 CLAUDE.LOG GAME-20），`docs/deploy.md` 的部署後驗證是人工勾選；可加一個以 `wrangler dev` 跑 curl 的檢查腳本，或併入 E1 的 wrangler project。layer-E 審查建議。來源 GAME-20。
-- **R43 對比檢查與棋盤配色沒有進自動守門**【測試・低】：`scripts/check-contrast.ts` 不在任何 package.json script，DoD 不會跑；它只讀 `main.scss` token，`board.scss` 實際塗的環色、白字覆寫、黏土陰影與 `:focus-visible` 沒有測試，改壞不會有測試失敗。可把腳本加進 `pnpm test` 前置或寫成 vitest 測試，並讓它從 `board.scss` 取色。layer-U-A 審查建議。來源 GAME-23。
+- **R43 對比檢查與棋盤配色沒有進自動守門**【測試・低】：`scripts/check-contrast.ts` 不在任何 package.json script，DoD 不會跑；它只讀 `main.scss` token，`board.scss` 實際塗的環色、白字覆寫、黏土陰影與 `:focus-visible` 沒有測試，改壞不會有測試失敗。可把腳本加進 `pnpm test` 前置或寫成 vitest 測試，並讓它從 `board.scss` 取色。layer-U-A 審查建議。來源 GAME-23。GAME-32 又加了八組標記與連線配對，同樣沒有閘門守著。
 - **R44 棋盤鍵盤焦點環靠 blur 再聚焦升級**【a11y・低】：棋盤以 `focusVisible: false` 聚焦後，Chrome 不會因按鍵改成 focus-visible，GameBoard 在第一個非修飾鍵時 blur 再以 `focusVisible: true` 重新聚焦，會多送一組 blur／focus 事件；日後在棋盤掛 focus／blur 處理要留意。來源 GAME-24。
 - **R45 U-B1 測試強度不足**【測試・低】：layer-U-B 審查指出：「下一個」測試只斷言大於前值而非精確值；掛載聚焦測試未驗 `focusVisible: false`（只有 e2e 涵蓋，且依賴 Chromium 支援）；GameBoard 焦點環測試 mock `matches`；e2e 11 的拒絕閃爍依賴約 300ms 計時，慢機可能 flaky。來源 GAME-24。
 - **R46 e2e 12「找不到題庫」只能在 dev server 跑**【測試・低】：靠動態 import 同一個 `useLevelStore` 單例並 `__setLoader(null)`，wrangler／build 版跑不了；要在正式 build 驗缺檔需在 `src/e2e-hooks.ts` 提供測試鉤子。來源 GAME-25。
 - **R47 U-B2／U-B3 測試強度不足**【測試・低】：layer-U-B 審查指出：首頁與過關視窗的文案斷言以同一個 `t()` 比對；LevelPicker blur 測試以 setProps 手動驅動；隨機鈕與主按鈕檢查依賴 class 名稱；WinModal 焦點測試未驗 `autofocus`、新紀錄徽章測試未驗字級／字重（對比要求所在）、插圖測試只比 src 字串。來源 GAME-25、GAME-26。
 - **R49 「已過關不顯示操作提示」缺單元測試**【測試・低】：PlayView 的 `showHint` 有 `!won` 條件，但目前無法在提示仍顯示時過關（過關必經玩家填格，填格即收起提示；「提示」按鈕只高亮不代填），單元測試無路徑可達。日後出現不經玩家填格的過關途徑（自動填完、匯入盤面）時補上。來源 GAME-29。
 - **R50 ControlsHint 與 ControlsHelp 重複 `{token}`→`<kbd>` 切分與 `.pt-kbd` 樣式**【UX・低】：GAME-29 可動檔案不含共用檔，故兩元件各一份；可抽成 `src/components/help/KbdText.vue` 一處維護。來源 GAME-29。
+- **R51 標記與連線樣式無瀏覽器視覺驗證**【技術債・低】：GAME-32 只以 jsdom 測 class／DOM 與對比腳本，虛線 outline、✕ 角標、連線疊層與角落數字的實際外觀要等 GAME-34／GAME-35 接上畫面後在瀏覽器（或 e2e 截圖）目視確認。來源 GAME-32。
+- **R52 抖動期間角落數字與連線疊層的層次**【技術債・低】：`.pt-cell.is-shake` 的 transform 在動畫 150ms 內讓該格自成 stacking context，`trail` 模式下角落數字與連線疊層的上下關係可能短暫不同；目前過關後盤面 readonly 不會抖動，實務上不會同時發生。來源 GAME-32。
+- **R53 GAME-32 審查留下的測試與 DOM 細節**【測試・低】：(a) 非 `trail` 時 `<template v-else>` 讓按鈕內多兩個空字串 text anchor（childNodes 1→3，innerHTML／textContent 不變）；(b) GameBoard 的 trail 測試只數 `svg.pt-trail` 與 `.is-trail`，沒驗 GameBoard 把正確陣列傳給 TrailLine；(c) 角落數字測試未對照 grid 值。主 session 判定不擋合併。來源 GAME-32。
 
 ## 已結
 

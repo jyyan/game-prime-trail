@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { colOf, rowOf } from '../../core/geometry';
 import type { Cell } from '../../core/types';
 import { t } from '../../i18n';
+import type { CellMark } from './marks';
 
 const props = defineProps<{
   value: number;
@@ -14,6 +15,8 @@ const props = defineProps<{
   conflict: boolean;
   shake: boolean;
   cell: Cell;
+  mark?: CellMark;
+  trail?: boolean;
 }>();
 
 const row = computed(() => rowOf(props.cell));
@@ -29,6 +32,10 @@ const classes = computed(() => ({
   'is-highlight': props.highlight,
   'is-conflict': props.conflict,
   'is-shake': props.shake,
+  'is-trail': props.trail === true,
+  'is-mark-reject': props.mark === 'reject',
+  'is-mark-trap': props.mark === 'trap',
+  'is-mark-branch': props.mark === 'branch',
 }));
 
 // Track 1 of each axis is the half-cell outer band, so cell (r, c) sits at track r+2 / c+2.
@@ -39,6 +46,9 @@ const label = computed(() => {
   if (props.value > 0) content = t('board.number', { n: props.value });
   else if (props.kind === 'prime') content = t('board.primeCell');
   else content = t('board.empty');
+  if (props.mark === 'reject') content += `，${t('deadEnd.markReject')}`;
+  else if (props.mark === 'trap') content += `，${t('deadEnd.markTrap')}`;
+  else if (props.mark === 'branch') content += `，${t('demo.markBranch')}`;
   return t('board.cellLabel', { r: row.value + 1, c: col.value + 1, content });
 });
 </script>
@@ -53,6 +63,8 @@ const label = computed(() => {
     :aria-label="label"
     tabindex="-1"
   >
-    {{ value > 0 ? value : '' }}
+    <span v-if="trail" class="pt-num-corner">{{ value > 0 ? value : '' }}</span>
+    <!-- Same text node as before the trail prop existed (" 7 " / "  "): the whitespace is part of the DOM contract. -->
+    <template v-else>{{ ` ${value > 0 ? value : ''} ` }}</template>
   </button>
 </template>
