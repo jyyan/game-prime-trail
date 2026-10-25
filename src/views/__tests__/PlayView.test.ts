@@ -2,7 +2,13 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, RouterView, type Router } from 'vue-router';
-import { FIXTURE_PATH, FIXTURE_RECORD } from '../../core/__fixtures__/level-fixture';
+import {
+  FIXTURE_ALT_PATH,
+  FIXTURE_AMBIGUOUS_HINT_MASK,
+  FIXTURE_PATH,
+  FIXTURE_RECORD,
+  fixtureGrid,
+} from '../../core/__fixtures__/level-fixture';
 import { decodeLevel, derivePuzzle } from '../../core/level-decode';
 import { useConfirm } from '../../composables/useConfirm';
 import { useLevelStore } from '../../composables/useLevelStore';
@@ -10,6 +16,7 @@ import { useRecords } from '../../composables/useRecords';
 import { __resetSettings } from '../../composables/useSettings';
 import { useToast } from '../../composables/useToast';
 import { installE2eHooks } from '../../e2e-hooks';
+import GameBoard from '../../components/board/GameBoard.vue';
 import PlayView from '../PlayView.vue';
 
 // The PDF pipeline (font fetch, jsPDF) has its own tests; here only the view's wiring matters.
@@ -590,6 +597,141 @@ describe('PlayView: winning', () => {
     await click(winModal()!.querySelector<HTMLElement>('[data-action="backHome"]'));
     expect(router!.currentRoute.value.fullPath).toBe('/');
     expect(wrapper.find('[data-view="home"]').exists()).toBe(true);
+  });
+});
+
+// Demo-playback spec §6 (dead-end hint on easy) and §5.4 (completed line on win).
+describe('PlayView: dead-end hint', () => {
+  /** Trail-press `cells` in order, skipping cells that are givens on the current board. */
+  async function pressCells(wrapper: VueWrapper, cells: readonly number[]): Promise<void> {
+    for (const cell of cells) {
+      if (!cellAt(wrapper, cell).classes().includes('is-given')) await cellAt(wrapper, cell).trigger('pointerdown');
+    }
+    await flushPromises();
+  }
+  // Reference path to 39 (cell 71), then 40 at 61 (41 is the given at 60), 42 at 50 (43 is the
+  // given at 40): cell 70 is walled in by 60, 71 and 80, so the trail is doomed (trap).
+  const TRAP_PREFIX = FIXTURE_PATH.slice(1, 39);
+  const TRAP_MOVES = [61, 60, 50, 40];
+  const deadLine = (w: VueWrapper) => w.find('[data-dead-end]');
+
+  it('easy: a move that traps a cell marks the head ✕, frames the trapped cell and explains why', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await pressCells(wrapper, TRAP_PREFIX);
+    await pressCells(wrapper, [61]);
+    expect(deadLine(wrapper).exists()).toBe(false);
+    expect(wrapper.findAll('.is-mark-reject, .is-mark-trap')).toHaveLength(0);
+    await pressCells(wrapper, [50]);
+    expect(cellAt(wrapper, 40).classes()).toContain('is-mark-reject'); // head: 43, the given after 42
+    expect(cellAt(wrapper, 70).classes()).toContain('is-mark-trap');
+    expect(wrapper.findAll('.is-mark-reject')).toHaveLength(1);
+    expect(wrapper.findAll('.is-mark-trap')).toHaveLength(1);
+    const line = deadLine(wrapper);
+    expect(line.text()).toContain('紅框的格子會被四面圍住');
+    expect(line.attributes('aria-live')).toBe('polite');
+    // The line sits under the board, before the status bar.
+    const order = Array.from((wrapper.element as HTMLElement).querySelectorAll('[data-dead-end], .pt-status-bar'));
+    expect(order.map((el) => el.hasAttribute('data-dead-end'))).toEqual([true, false]);
+    expect(wrapper.find('[data-assisted]').exists()).toBe(false);
+
+    await wrapper.get('[data-action="undo"]').trigger('click');
+    await flushPromises();
+    expect(deadLine(wrapper).exists()).toBe(false);
+    expect(wrapper.findAll('.is-mark-reject, .is-mark-trap')).toHaveLength(0);
+    expect(wrapper.find('[data-assisted]').exists()).toBe(false);
+  });
+
+  it('easy: far fills in the target, distance and steps left', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await pressCells(wrapper, FIXTURE_PATH.slice(1, 8)); // head 8 at cell 58
+    await pressCells(wrapper, [57]); // 9 here: 11 (cell 79) is 4 steps away with 2 to go
+    expect(deadLine(wrapper).text()).toContain('從龍頭走到 11 至少要 4 步，但只剩 2 步');
+    expect(cellAt(wrapper, 57).classes()).toContain('is-mark-reject');
+    expect(cellAt(wrapper, 79).classes()).toContain('is-mark-trap');
+  });
+
+  it('advanced: the same board shows nothing', async () => {
+    const wrapper = await mountAt('/play/1/advanced');
+    await pressCells(wrapper, [...TRAP_PREFIX, ...TRAP_MOVES]);
+    expect(cellAt(wrapper, 40).text()).toBe('43');
+    expect(deadLine(wrapper).exists()).toBe(false);
+    expect(wrapper.findAll('.is-mark-reject, .is-mark-trap')).toHaveLength(0);
+  });
+
+  it('writes no storage key of its own', async () => {
+    const control = await mountAt('/play/1/easy');
+    await pressCells(control, [...TRAP_PREFIX, 61]);
+    wrappers.splice(0).forEach((w) => w.unmount());
+    const expected = Object.keys(localStorage).sort();
+    localStorage.clear();
+    const wrapper = await mountAt('/play/1/easy');
+    await pressCells(wrapper, [...TRAP_PREFIX, 61, 50]);
+    expect(deadLine(wrapper).exists()).toBe(true);
+    wrappers.splice(0).forEach((w) => w.unmount());
+    expect(Object.keys(localStorage).sort()).toEqual(expected);
+  });
+});
+
+describe('PlayView: completed line', () => {
+  const trailProp = (w: VueWrapper) => w.findComponent(GameBoard).props('trail') ?? null;
+
+  it("a win draws the line along the player's own grid, not the reference path", async () => {
+    // {1} + primes >= 19 has two solutions; FIXTURE_ALT_PATH differs from the reference at 12-18.
+    useLevelStore().__setLoader(async () => ({
+      ...fixtureFile(),
+      levels: [{ ...FIXTURE_RECORD, h: FIXTURE_AMBIGUOUS_HINT_MASK }],
+    }));
+    const wrapper = await mountAt('/play/1/advanced');
+    for (let k = 2; k < 100; k++) {
+      const cell = FIXTURE_ALT_PATH[k - 1];
+      if (!cellAt(wrapper, cell).classes().includes('is-given')) await cellAt(wrapper, cell).trigger('pointerdown');
+    }
+    await flushPromises();
+    expect(trailProp(wrapper)).toBeNull();
+    expect(wrapper.find('svg.pt-trail').exists()).toBe(false);
+    await cellAt(wrapper, FIXTURE_ALT_PATH[99]).trigger('pointerdown');
+    await flushPromises();
+    expect(winModal()).not.toBeNull();
+    expect(trailProp(wrapper)).toEqual([...FIXTURE_ALT_PATH]);
+    expect(trailProp(wrapper)).not.toEqual([...FIXTURE_PATH]);
+    expect(wrapper.find('svg.pt-trail polyline').exists()).toBe(true);
+    expect(cellAt(wrapper, FIXTURE_ALT_PATH[11]).find('.pt-num-corner').text()).toBe('12');
+  });
+
+  it('restart after a win removes the line', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await pressPath(wrapper, 100);
+    expect(trailProp(wrapper)).toEqual([...FIXTURE_PATH]);
+    expect(wrapper.find('[data-dead-end]').exists()).toBe(false);
+    await menuAction(wrapper, 'restart');
+    await settleConfirm(true);
+    expect(trailProp(wrapper)).toBeNull();
+    expect(wrapper.find('svg.pt-trail').exists()).toBe(false);
+  });
+
+  it('a restored save holding the finished trail draws the line', async () => {
+    localStorage.setItem(
+      'prime-trail:v1:L1:progress',
+      JSON.stringify({
+        '1:easy': {
+          grid: [...fixtureGrid(FIXTURE_PATH)],
+          steps: 74,
+          elapsedMs: 1000,
+          assisted: false,
+          inputMode: 'trail',
+          savedAt: new Date().toISOString(),
+        },
+      }),
+    );
+    const wrapper = await mountAt('/play/1/easy');
+    expect(trailProp(wrapper)).toEqual([...FIXTURE_PATH]);
+    expect(wrapper.find('svg.pt-trail polyline').exists()).toBe(true);
+  });
+
+  it('an unfinished board has no line', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await pressPath(wrapper, 99);
+    expect(trailProp(wrapper)).toBeNull();
   });
 });
 
