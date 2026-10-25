@@ -47,7 +47,7 @@
 - **R49 「已過關不顯示操作提示」缺單元測試**【測試・低】：PlayView 的 `showHint` 有 `!won` 條件，但目前無法在提示仍顯示時過關（過關必經玩家填格，填格即收起提示；「提示」按鈕只高亮不代填），單元測試無路徑可達。日後出現不經玩家填格的過關途徑（自動填完、匯入盤面）時補上。來源 GAME-29。
 - **R50 ControlsHint 與 ControlsHelp 重複 `{token}`→`<kbd>` 切分與 `.pt-kbd` 樣式**【UX・低】：GAME-29 可動檔案不含共用檔，故兩元件各一份；可抽成 `src/components/help/KbdText.vue` 一處維護。來源 GAME-29。
 - **R52 抖動期間角落數字與連線疊層的層次**【技術債・低】：`.pt-cell.is-shake` 的 transform 在動畫 150ms 內讓該格自成 stacking context，`trail` 模式下角落數字與連線疊層的上下關係可能短暫不同；目前過關後盤面 readonly 不會抖動，實務上不會同時發生。來源 GAME-32。
-- **R53 GAME-32 審查留下的測試與 DOM 細節**【測試・低】：(a) 非 `trail` 時 `<template v-else>` 讓按鈕內多兩個空字串 text anchor（childNodes 1→3，innerHTML／textContent 不變）；(b) GameBoard 的 trail 測試只數 `svg.pt-trail` 與 `.is-trail`，沒驗 GameBoard 把正確陣列傳給 TrailLine；(c) 角落數字測試未對照 grid 值。主 session 判定不擋合併。來源 GAME-32。
+- **R53 GAME-32 審查留下的測試與 DOM 細節**【測試・低】：(a) ~~非 `trail` 時多出 Fragment anchor 與前後空白~~：GAME-37 已修正（改用回傳純字串的函式元件）；(b) GameBoard 的 trail 測試只數 `svg.pt-trail` 與 `.is-trail`，沒驗 GameBoard 把正確陣列傳給 TrailLine；(c) 角落數字測試未對照 grid 值。主 session 判定不擋合併。來源 GAME-32。
 - **R55 GAME-33／GAME-34 測試強度不足**【測試・低】：layer-B 審查指出：demo-solver 未釘住原因的「第一個不成立」順序、Warnsdorff 與上右下左同分規則、`maxEvents` 用盡回 `solved: false` 的路徑，退路測試的「最接近 2」可能因同分而失效；PlayView 的 `noMove` 分支（rejected 標記與 `{n}`）無測試、`won` 守衛不影響任何測試、e2e 連線未驗依玩家盤面。主 session 判定不擋合併。來源 GAME-33、GAME-34。
 - **R56 375 寬角落數字偏小**【UI・低】：過關連線時角落數字在 375px 寬約 8px，可讀但偏小，之後評估字級或格內排版。來源 GAME-34、GAME-36。
 - **R57 e2e 15 的卡住截圖依賴隨機地圖**【測試・低】：快轉找「有 ✕ 且有紅框」的卡住畫面，最多換 6 張圖，機率性；偶發失敗時改用 e2e hook 注入固定 seed 或 levelId。另 layer-C 審查指出 DemoDialog 測試兩個 mock levelId 指向同一 fixture、以 `vi.getTimerCount()` 判斷舊播放已停、HomeView「收合可見」只看 style 字串，強度不足。來源 GAME-35。
