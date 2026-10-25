@@ -14,7 +14,7 @@ function pick(mode: InputMode): void {
 </script>
 
 <template>
-  <div class="btn-group w-100 pt-mode-toggle" role="group" :aria-label="t('input.toggle')">
+  <div class="w-100 pt-mode-toggle" role="group" :aria-label="t('input.toggle')">
     <button
       v-for="mode in MODES"
       :key="mode"
@@ -31,7 +31,7 @@ function pick(mode: InputMode): void {
 </template>
 
 <style scoped>
-/* Bootstrap's button-group partial is not in the slimmed stylesheet, so .btn-group is a plain block
+/* Bootstrap's button-group partial is not in the slimmed stylesheet, so a .btn-group would be a plain block
    and the buttons sat at their content width. Lay it out as a joined segmented control with two
    equal halves so it spans the row like the status bar and action bar around it (GAME-27). */
 .pt-mode-toggle {

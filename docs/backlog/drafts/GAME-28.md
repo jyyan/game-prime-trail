@@ -1,0 +1,1 @@
+- R48：結案。SolutionView 切換鈕與提示改 scoped token 樣式；新增 `src/styles/__tests__/bootstrap-partials.test.ts` 防漂移（template 用到未 import partial 的 Bootstrap class 即失敗）；順帶移除 InputModeToggle 無作用的 `btn-group`。

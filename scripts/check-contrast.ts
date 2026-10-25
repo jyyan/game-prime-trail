@@ -56,7 +56,7 @@ tokens.set('#fff', '#ffffff');
 const pairs: Array<[string, string, Kind, string]> = [
   // Page and surfaces
   ['--pt-text', '--pt-bg', 'text', 'body text on page background'],
-  ['--pt-text', '--pt-surface', 'text', 'body text on cards／dialogs'],
+  ['--pt-text', '--pt-surface', 'text', 'body text on cards／dialogs, solution also-valid note'],
   ['--pt-text-muted', '--pt-bg', 'text', 'secondary text, outline-secondary buttons on page'],
   ['--pt-text-muted', '--pt-surface', 'text', 'secondary text on cards'],
   ['#fff', '--pt-text-muted', 'text', 'btn-secondary label ($secondary)'],

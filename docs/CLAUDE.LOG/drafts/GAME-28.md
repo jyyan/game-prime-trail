@@ -1,0 +1,3 @@
+### GAME-28：補掉精簡版 Bootstrap 缺 partial 的最後一處，並加防漂移測試（R48）
+
+`main.scss` 只 import 部分 Bootstrap，缺 `button-group`、`helpers`、`alert`。GAME-27 修了 InputModeToggle，但 SolutionView 的「你的解／參考解」切換鈕仍用 `btn-group`（內容寬、互不相接），「也是有效解」提示用 `alert alert-success`（完全無樣式）。主 session 裁定不把 partial 加回全域（`helpers` 會帶進非 token 的 Bootstrap 色），所以改成元件 scoped 樣式：切換鈕比照 InputModeToggle 做兩等分 grid、相接圓角、44px 高；提示改用 `--pt-surface` 底、`--pt-text` 字（已在對比檢查內）與 `--pt-success` 左側色條（僅裝飾，語意由文字承擔）。另加 `src/styles/__tests__/bootstrap-partials.test.ts`：掃所有 `.vue` template 的 class，對照 main.scss 的 import，用到未 import partial 的 class 就失敗並指名檔案與 class。測試立刻抓到 InputModeToggle 仍殘留無作用的 `btn-group` class，一併移除，PlayView 測試的選擇器改用 `.pt-mode-toggle`。

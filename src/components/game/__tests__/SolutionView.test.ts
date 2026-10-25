@@ -21,6 +21,13 @@ const cellText = (wrapper: ReturnType<typeof mountView>, cell: number) =>
   wrapper.get(`[data-cell="${cell}"]`).text();
 
 describe('SolutionView', () => {
+  it('toggle does not rely on the missing Bootstrap btn-group partial', () => {
+    const wrapper = mountView({ playerGrid: fixtureGrid(FIXTURE_PATH), solved: false });
+    const group = wrapper.get('[role="group"]');
+    expect(group.classes()).not.toContain('btn-group');
+    expect(group.findAll('button')).toHaveLength(2);
+  });
+
   it('no "also valid" note before the win', () => {
     const wrapper = mountView({ playerGrid: fixtureGrid(FIXTURE_ALT_PATH), solved: false });
     expect(wrapper.find('[data-also-valid]').exists()).toBe(false);
