@@ -18,11 +18,6 @@ function prefix(k: number): Cell[] {
   return FIXTURE_PATH.slice(0, k);
 }
 
-/** No grey cells and only the start given: findDeadEnd then depends on geometry alone. */
-function plain(start: Cell): Puzzle {
-  return { start, grey: new Uint8Array(100), givens: new Map([[start, 1]]) };
-}
-
 describe('trailOf', () => {
   it('returns the first k cells of the reference solution in order', () => {
     for (const k of [1, 2, 10, 57, 100]) {
@@ -70,6 +65,16 @@ describe('trailOf', () => {
     expect(trailOf(fixtureGrid(prefix(3)), puzzle)).toBeNull();
   });
 
+  it('is null when a given number below the head sits on an unvisited cell', () => {
+    const elsewhere = FIXTURE_PATH[10];
+    const puzzle: Puzzle = {
+      ...LOOSE,
+      givens: new Map([...LOOSE.givens, [elsewhere, 3]]),
+    };
+    expect(trailOf(fixtureGrid(prefix(3)), puzzle)).toBeNull();
+    expect(trailOf(fixtureGrid(prefix(2)), puzzle)).toEqual(prefix(2));
+  });
+
   it('is null on a duplicated trail number', () => {
     const grid = fixtureGrid(prefix(5));
     grid[0] = 3;
@@ -104,16 +109,16 @@ describe('findDeadEnd far', () => {
 
 describe('findDeadEnd trap', () => {
   it('lists a cell walled in on all sides', () => {
-    // corner 0 has both neighbours (1, 10) visited and the head (2) is not next to it
-    expect(findDeadEnd(plain(10), [10, 20, 21, 11, 1, 2])).toEqual({
+    // reference prefix of 39, then the detour 61, 60, 50 leaves cell 70 with no free neighbour
+    expect(findDeadEnd(LOOSE, [...prefix(39), 61, 60, 50])).toEqual({
       kind: 'trap',
-      cells: [0],
+      cells: [70],
       rejected: [],
     });
   });
 
   it('does not flag it while the head is still next to the cell', () => {
-    expect(findDeadEnd(plain(10), [10, 20, 21, 11, 1])).toBeNull();
+    expect(findDeadEnd(LOOSE, [...prefix(39), 61, 60])).toBeNull();
   });
 });
 
@@ -133,8 +138,8 @@ describe('findDeadEnd twoEnds', () => {
 
 describe('findDeadEnd split', () => {
   it('lists the block the head can no longer reach', () => {
-    // the trail walls off the top-left 2x2 block {0,1,10,11}; the head has moved on to 30
-    expect(findDeadEnd(plain(2), [2, 12, 22, 21, 20, 30])).toEqual({
+    // reference prefix of 45, then 21, 22, 12, 2, 3 cuts off the top-left block
+    expect(findDeadEnd(LOOSE, [...prefix(45), 21, 22, 12, 2, 3])).toEqual({
       kind: 'split',
       cells: [0, 1, 10, 11],
       rejected: [],
@@ -142,7 +147,7 @@ describe('findDeadEnd split', () => {
   });
 
   it('is null while the head still touches the block', () => {
-    expect(findDeadEnd(plain(2), [2, 12, 22, 21, 20])).toBeNull();
+    expect(findDeadEnd(LOOSE, [...prefix(45), 21, 22, 12, 2])).toBeNull();
   });
 });
 
@@ -158,10 +163,14 @@ describe('findDeadEnd noMove', () => {
     expect(findDeadEnd(LOOSE, prefix(51))).toBeNull();
   });
 
-  it("rejects neighbours that are other numbers' givens", () => {
+  it("rejects neighbours that are other numbers' givens even when the colour matches", () => {
+    // 2 is prime, so grey neighbours match the colour; only the givens (7, 9) rule them out
+    const grey = new Uint8Array(100);
+    grey[1] = 1;
+    grey[10] = 1;
     const puzzle: Puzzle = {
       start: 0,
-      grey: new Uint8Array(100),
+      grey,
       givens: new Map([
         [0, 1],
         [1, 7],
@@ -173,9 +182,10 @@ describe('findDeadEnd noMove', () => {
     expect([...(d?.rejected ?? [])].sort((a, b) => a - b)).toEqual([1, 10]);
   });
 
-  it('accepts the neighbour that is the given of h+1', () => {
+  it('accepts the neighbour that is the given of h+1 and rejects the other given', () => {
     const grey = new Uint8Array(100);
-    grey[1] = 1; // 2 is prime
+    grey[1] = 1;
+    grey[10] = 1; // both colours match 2; only the givens differ
     const puzzle: Puzzle = {
       start: 0,
       grey,
@@ -186,6 +196,26 @@ describe('findDeadEnd noMove', () => {
       ]),
     };
     expect(findDeadEnd(puzzle, [0])).toBeNull();
+    // nobody holds the given 2 any more, so both neighbours are rejected by their givens
+    const none: Puzzle = { ...puzzle, givens: new Map([[0, 1], [1, 9], [10, 8]]) };
+    expect(findDeadEnd(none, [0])?.kind).toBe('noMove');
+  });
+
+  it('only the cell of h+1 may take it when h+1 is a given', () => {
+    // 2 is a given on cell 1, but cell 1 has the wrong colour; free cell 10 must not take it
+    const grey = new Uint8Array(100);
+    grey[10] = 1; // 2 is prime
+    const puzzle: Puzzle = {
+      start: 0,
+      grey,
+      givens: new Map([
+        [0, 1],
+        [1, 2],
+      ]),
+    };
+    const d = findDeadEnd(puzzle, [0]);
+    expect(d?.kind).toBe('noMove');
+    expect([...(d?.rejected ?? [])].sort((a, b) => a - b)).toEqual([1, 10]);
   });
 });
 
