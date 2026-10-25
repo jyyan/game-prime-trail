@@ -426,3 +426,45 @@ describe('GameBoard keyboard and exposed methods', () => {
     expect(document.activeElement).toBe(wrapper.element);
   });
 });
+
+describe('GameBoard marks and trail (demo-playback A2)', () => {
+  it('without marks/trail: no new classes and no svg', () => {
+    const wrapper = mountBoard();
+    expect(wrapper.find('svg').exists()).toBe(false);
+    expect(wrapper.find('.pt-trail').exists()).toBe(false);
+    expect(wrapper.find('[class*="is-mark"]').exists()).toBe(false);
+    expect(wrapper.find('.is-trail').exists()).toBe(false);
+    expect(wrapper.find('.pt-num-corner').exists()).toBe(false);
+  });
+
+  it('marks add is-mark-* classes and aria text', () => {
+    const marks = new Map<Cell, 'reject' | 'trap' | 'branch'>([
+      [0, 'reject'],
+      [1, 'trap'],
+      [2, 'branch'],
+    ]);
+    const wrapper = mountBoard({ marks } as Partial<Props>);
+    const c0 = wrapper.get('[data-cell="0"]');
+    const c1 = wrapper.get('[data-cell="1"]');
+    const c2 = wrapper.get('[data-cell="2"]');
+    expect(c0.classes()).toContain('is-mark-reject');
+    expect(c0.attributes('aria-label')).toContain(t('deadEnd.markReject'));
+    expect(c1.classes()).toContain('is-mark-trap');
+    expect(c1.attributes('aria-label')).toContain(t('deadEnd.markTrap'));
+    expect(c2.classes()).toContain('is-mark-branch');
+    expect(c2.attributes('aria-label')).toContain(t('demo.markBranch'));
+    expect(wrapper.get('[data-cell="3"]').classes().join(' ')).not.toContain('is-mark');
+  });
+
+  it('trail renders TrailLine and puts numbers in the corner', () => {
+    const wrapper = mountBoard({ trail: FIXTURE_PATH } as Partial<Props>);
+    expect(wrapper.findAll('svg.pt-trail')).toHaveLength(1);
+    expect(wrapper.findAll('.pt-cell.is-trail')).toHaveLength(100);
+  });
+
+  it('trail null behaves like no trail', () => {
+    const wrapper = mountBoard({ trail: null } as Partial<Props>);
+    expect(wrapper.find('svg').exists()).toBe(false);
+    expect(wrapper.find('.is-trail').exists()).toBe(false);
+  });
+});

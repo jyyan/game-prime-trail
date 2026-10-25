@@ -104,3 +104,27 @@ describe('BoardCell', () => {
     expect(mountCell().get('button').attributes('tabindex')).toBe('-1');
   });
 });
+
+describe('BoardCell marks and trail', () => {
+  it('default has no mark/trail classes', () => {
+    const btn = mountCell().get('button');
+    expect(btn.classes().join(' ')).not.toMatch(/is-mark|is-trail/);
+    expect(btn.find('span').exists()).toBe(false);
+  });
+
+  it.each([
+    ['reject', 'deadEnd.markReject'],
+    ['trap', 'deadEnd.markTrap'],
+    ['branch', 'demo.markBranch'],
+  ] as const)('mark=%s adds class and appends aria text', (mark, key) => {
+    const btn = mount(BoardCell, { props: { ...base, mark } }).get('button');
+    expect(btn.classes()).toContain(`is-mark-${mark}`);
+    expect(btn.attributes('aria-label')).toContain(t(key));
+  });
+
+  it('trail adds is-trail and keeps the number text', () => {
+    const btn = mount(BoardCell, { props: { ...base, value: 7, trail: true } }).get('button');
+    expect(btn.classes()).toContain('is-trail');
+    expect(btn.text()).toBe('7');
+  });
+});

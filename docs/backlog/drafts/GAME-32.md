@@ -1,0 +1,2 @@
+- 【技術債・低】標記與連線樣式無瀏覽器視覺驗證：GAME-32 只以 jsdom 測 class／DOM 與對比腳本，虛線 outline、✕ 角標、連線疊層與角落數字的實際外觀要等 C 層接上畫面後在瀏覽器（或 e2e）目視確認。
+- 【技術債・低】`.pt-cell.is-shake` 的 transform 會在動畫期間讓該格自成 stacking context，`trail` 模式下角落數字的 z-index 與連線疊層的關係在抖動那 150ms 可能短暫不同；目前抖動只在可編輯盤面出現，過關後 readonly，實務上不會同時發生。

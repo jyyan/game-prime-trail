@@ -96,6 +96,15 @@ const pairs: Array<[string, string, Kind, string]> = [
   ['--pt-danger', '--pt-prime', 'ui', 'conflict ring on prime cell'],
   ['--pt-text-muted', '--pt-surface', 'ui', 'grid line on white cell'],
   ['--pt-text-muted', '--pt-prime', 'ui', 'grid line on prime cell'],
+  // Demo / dead-end marks and the completed trail line (demo-playback spec §5.3, §5.4, §6.2)
+  ['--pt-text', '--pt-dead-bg', 'text', 'number on marked (pale red) cell'],
+  ['--pt-danger', '--pt-dead-bg', 'text', 'reject corner ✕ and demo backtrack ✕ on pale red'],
+  ['--pt-dead-line', '--pt-surface', 'ui', 'trap dashed frame vs white cell／board'],
+  ['--pt-dead-line', '--pt-prime', 'ui', 'trap dashed frame vs prime cell'],
+  ['--pt-branch-line', '--pt-surface', 'ui', 'branch dashed frame vs white cell'],
+  ['--pt-branch-line', '--pt-prime', 'ui', 'branch dashed frame vs prime cell'],
+  ['--pt-trail', '--pt-surface', 'ui', 'trail line on white cell'],
+  ['--pt-trail', '--pt-prime', 'ui', 'trail line on prime cell'],
 ];
 
 // Tokens used only as decoration next to text that carries the meaning; not contrast-checked.

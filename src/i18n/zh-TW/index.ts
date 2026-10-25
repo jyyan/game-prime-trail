@@ -2,6 +2,8 @@ import { app } from './app';
 import { board } from './board';
 import { common } from './common';
 import { conflict } from './conflict';
+import { deadEnd } from './deadEnd';
+import { demo } from './demo';
 import { difficulty } from './difficulty';
 import { help } from './help';
 import { home } from './home';
@@ -28,4 +30,6 @@ export const zhTW = {
   play,
   home,
   help,
+  demo,
+  deadEnd,
 } as const;

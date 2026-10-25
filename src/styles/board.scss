@@ -150,6 +150,65 @@ $pt-highlight: var(--pt-hint);
   &.is-shake {
     animation: pt-shake 150ms linear;
   }
+
+  // Dead-end / demo marks (demo-playback spec §5.3, §6.2). Shapes differ from .is-conflict's solid
+  // ring: reject = corner ✕, trap = red dashed frame, branch = blue dashed frame.
+  &.is-mark-reject,
+  &.is-mark-trap {
+    background: var(--pt-dead-bg);
+    color: var(--pt-text);
+  }
+
+  &.is-mark-reject::after {
+    content: '\2715';
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: calc(var(--cell) * 0.3);
+    line-height: 1;
+    color: var(--pt-danger);
+  }
+
+  &.is-mark-trap {
+    outline: 2px dashed var(--pt-dead-line);
+    outline-offset: -2px;
+  }
+
+  &.is-mark-branch {
+    outline: 2px dashed var(--pt-branch-line);
+    outline-offset: -2px;
+  }
+
+  // Completed trail: numbers shrink into the top-left corner so the line stays visible.
+  &.is-trail {
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 2px 0 0 3px;
+    font-size: calc(var(--cell) * 0.26);
+  }
+
+  .pt-num-corner {
+    position: relative;
+    z-index: 2; // above .pt-trail
+  }
+}
+
+// Completed-trail overlay: over cell backgrounds, under the numbers, never catches pointers.
+.pt-trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+
+  polyline {
+    fill: none;
+    stroke: var(--pt-trail);
+    stroke-width: 0.08;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
 }
 
 .pt-board.is-readonly .pt-cell {
@@ -213,6 +272,10 @@ $pt-highlight: var(--pt-hint);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pt-cell {
+    transition: none;
+  }
+
   .pt-cell.is-shake {
     animation: none;
     outline: 2px solid $pt-conflict;
