@@ -1,0 +1,51 @@
+{
+  "spec": "docs/superpowers/specs/2026-10-25-demo-playback.md",
+  "plan": "docs/superpowers/plans/2026-10-25-demo-playback.md",
+  "layer": "C",
+  "base": "4c664fa33a216b838d1c5d226d16ecde0ec8f8c7",
+  "setup": [
+    "pnpm install --frozen-lockfile"
+  ],
+  "dod": [
+    "pnpm typecheck",
+    "pnpm test",
+    "pnpm build"
+  ],
+  "tasks": [
+    {
+      "id": "C1",
+      "title": "示範對話框與首頁按鈕（taskboard GAME-35；草稿用 docs/CLAUDE.LOG/drafts/GAME-35.md、docs/backlog/drafts/GAME-35.md）。基底已有 B1 src/core/demo-solver.ts（traceDemo、pickDemo、playbackMs、DEMO_PACING、DEMO_LIMITS；pickDemo 在 1000 張題庫桌機實測平均 11.3ms，低於 plan 的 30ms 門檻，同步呼叫即可）、A2 GameBoard 的 marks／trail 與 CellMark（src/components/board/marks.ts）、i18n demo.*。plan 的 i18n 禁區有一個例外：src/i18n/zh-TW/demo.ts 的 mapInfo 目前是 '{difficulty}　第 {n} 張'，與 spec §5.2 不符，改成「第 {n} 張地圖・{difficulty}｜退回 {k} 次」的意思並使用；demo.ts 其他 key 若缺或措辭不符 spec §5.3 也可在此檔修正，其他 i18n 檔仍不可動。播放步序必須與 playbackMs 一致。e2e 用 repo 的 playwright.config.ts，同層沒有其他 e2e 任務；跑完不留殘留程序。375／1280 截圖（播放中、卡住說明含 ✕ 與紅框、完成連線）存 /private/tmp/claude-501/-Users-sss2500-codejobs-game-prime-trail/f392cf40-c9d8-4e27-a8e2-4f83ac0b5ac4/scratchpad/uiux/，不 commit（可在 e2e 以 page.clock 或注入方式快轉）。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。",
+      "files": [
+        "src/composables/useDemoPlayback.ts",
+        "src/composables/__tests__/useDemoPlayback.test.ts",
+        "src/components/demo/DemoDialog.vue",
+        "src/components/demo/__tests__/DemoDialog.test.ts",
+        "src/views/HomeView.vue",
+        "src/views/__tests__/HomeView.test.ts",
+        "src/i18n/zh-TW/demo.ts",
+        "e2e/15-demo.spec.ts",
+        "docs/CLAUDE.LOG/drafts/GAME-35.md",
+        "docs/backlog/drafts/GAME-35.md"
+      ],
+      "forbidden": [
+        "src/core/",
+        "src/components/board/",
+        "src/views/PlayView.vue",
+        "e2e/helpers.ts",
+        "docs/CLAUDE.LOG/202610.md",
+        "docs/backlog.md"
+      ],
+      "acceptance": [
+        "pnpm vitest run src/composables/__tests__/useDemoPlayback.test.ts src/components/demo src/views/__tests__/HomeView.test.ts",
+        "pnpm exec playwright test e2e/15-demo.spec.ts"
+      ],
+      "planSection": "### Task C1"
+    }
+  ],
+  "models": {
+    "implement": "opus",
+    "verify": "haiku",
+    "review": "sonnet",
+    "fix": "opus"
+  }
+}
