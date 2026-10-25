@@ -1,0 +1,27 @@
+{
+  "spec": "docs/superpowers/specs/2026-10-25-demo-playback.md",
+  "plan": "docs/superpowers/plans/2026-10-25-demo-playback.md",
+  "layer": "A",
+  "base": "2a41ad42539c6b66a147411b157a430716b87324",
+  "setup": ["pnpm install --frozen-lockfile"],
+  "dod": ["pnpm typecheck", "pnpm test", "pnpm build"],
+  "tasks": [
+    {
+      "id": "A1",
+      "title": "死路判定核心（taskboard GAME-31；草稿用 docs/CLAUDE.LOG/drafts/GAME-31.md、docs/backlog/drafts/GAME-31.md）。純 TS，不依賴 Vue/DOM。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。",
+      "files": ["src/core/dead-end.ts", "src/core/__tests__/dead-end.test.ts", "docs/CLAUDE.LOG/drafts/GAME-31.md", "docs/backlog/drafts/GAME-31.md"],
+      "forbidden": ["src/core/solver.ts", "src/core/validate.ts", "src/components/", "src/views/", "docs/CLAUDE.LOG/202610.md", "docs/backlog.md"],
+      "acceptance": ["pnpm vitest run src/core/__tests__/dead-end.test.ts"],
+      "planSection": "### Task A1"
+    },
+    {
+      "id": "A2",
+      "title": "棋盤標記、完成連線疊層、i18n 與 token（taskboard GAME-32；草稿用 docs/CLAUDE.LOG/drafts/GAME-32.md、docs/backlog/drafts/GAME-32.md）。GameBoard 不傳新 prop 時行為與 DOM 必須與現在完全相同（SolutionView 與既有測試不受影響）。文字照 spec §5.3、§6.2 的表。若 vitest 報 levels.json not found，刪掉 node_modules/.vitest-cache 再跑（backlog R37）。",
+      "files": ["src/components/board/TrailLine.vue", "src/components/board/__tests__/TrailLine.test.ts", "src/components/board/marks.ts", "src/i18n/zh-TW/demo.ts", "src/i18n/zh-TW/deadEnd.ts", "src/i18n/zh-TW/index.ts", "src/components/board/GameBoard.vue", "src/components/board/BoardCell.vue", "src/styles/board.scss", "src/styles/main.scss", "scripts/check-contrast.ts", "src/components/board/__tests__/GameBoard.test.ts", "src/components/board/__tests__/BoardCell.test.ts", "docs/CLAUDE.LOG/drafts/GAME-32.md", "docs/backlog/drafts/GAME-32.md"],
+      "forbidden": ["src/core/", "src/views/", "src/components/game/", "docs/CLAUDE.LOG/202610.md", "docs/backlog.md"],
+      "acceptance": ["pnpm vitest run src/components/board", "pnpm exec tsx scripts/check-contrast.ts", "pnpm vitest run src/styles"],
+      "planSection": "### Task A2"
+    }
+  ],
+  "models": {"implement": "sonnet", "verify": "haiku", "review": "haiku", "fix": "sonnet"}
+}
