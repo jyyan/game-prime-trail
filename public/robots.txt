@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://game-prime-trail.jyyan.info/sitemap.xml
