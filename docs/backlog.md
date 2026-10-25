@@ -44,10 +44,10 @@
 - **R45 U-B1 測試強度不足**【測試・低】：layer-U-B 審查指出：「下一個」測試只斷言大於前值而非精確值；掛載聚焦測試未驗 `focusVisible: false`（只有 e2e 涵蓋，且依賴 Chromium 支援）；GameBoard 焦點環測試 mock `matches`；e2e 11 的拒絕閃爍依賴約 300ms 計時，慢機可能 flaky。來源 GAME-24。
 - **R46 e2e 12「找不到題庫」只能在 dev server 跑**【測試・低】：靠動態 import 同一個 `useLevelStore` 單例並 `__setLoader(null)`，wrangler／build 版跑不了；要在正式 build 驗缺檔需在 `src/e2e-hooks.ts` 提供測試鉤子。來源 GAME-25。
 - **R47 U-B2／U-B3 測試強度不足**【測試・低】：layer-U-B 審查指出：首頁與過關視窗的文案斷言以同一個 `t()` 比對；LevelPicker blur 測試以 setProps 手動驅動；隨機鈕與主按鈕檢查依賴 class 名稱；WinModal 焦點測試未驗 `autofocus`、新紀錄徽章測試未驗字級／字重（對比要求所在）、插圖測試只比 src 字串。來源 GAME-25、GAME-26。
-- **R48 精簡版 Bootstrap 缺 `button-group` 與 `helpers`，SolutionView 切換鈕沒有群組樣式**【UI・低】：`src/styles/main.scss` 只 import 部分 Bootstrap，沒有 `button-group`（`.btn-group`）與 `helpers`（`.text-bg-*`）。GAME-27 已在 InputModeToggle、StatusBar 以 scoped 樣式與 token 修正；`SolutionView.vue` 的「你的解／參考解」切換鈕（`btn-group btn-group-sm w-100`）仍停在內容寬、互不相接。可比照修正，並加一條防漂移檢查：元件用到的 Bootstrap class 必須有對應 partial（或改用 token 樣式）。主 session 裁定：不把 partial 加回全域，因 `helpers` 會帶進非 token 的 Bootstrap 色。來源 GAME-27。
 
 ## 已結
 
+- **R48 精簡版 Bootstrap 缺 partial，SolutionView 切換鈕沒有群組樣式**：切換鈕改 scoped grid 兩等分相接、44px；「也是有效解」提示改 token 樣式；新增 `src/styles/__tests__/bootstrap-partials.test.ts` 防漂移（template 用到未 import partial 的 Bootstrap class 即失敗），順帶移除 InputModeToggle 無作用的 `btn-group`。2026-10-25 GAME-28 合併。
 - **R30 LevelPicker 空白欄位即顯示錯誤**：首頁地圖編號空白時只停用「開始」、不顯示錯誤；有值且非法、blur 或 Enter 後才顯示。2026-10-25 GAME-25 合併。
 - **R33 操作列「清除」語意未在 spec 定義**：UI refresh 移除操作列「清除」，接續模式用「復原」、指定模式用數字鍵盤「清除」。2026-10-25 GAME-24 合併。
 - **R42 遊戲頁主棋盤在 320px 寬手機溢出**：`board.scss` 的 `--cell` 下限 30px → 26px；320px 視窗實測格寬 27.6px、無水平捲動，e2e/10-small-screen 守住。約 302px 以下仍會溢出（實際罕見）。2026-10-25 GAME-22 合併。

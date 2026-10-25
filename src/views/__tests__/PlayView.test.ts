@@ -155,7 +155,7 @@ describe('PlayView', () => {
 
   it('direct mode shows the pending digits in the status bar: 1, 0, 0 reads 100', async () => {
     const wrapper = await mountAt('/play/1/easy');
-    await wrapper.get('.btn-group button[data-mode="direct"]').trigger('click');
+    await wrapper.get('.pt-mode-toggle button[data-mode="direct"]').trigger('click');
     expect(wrapper.find('[data-next]').exists()).toBe(false);
     expect(wrapper.find('.pt-number-pad [data-pending]').exists()).toBe(false);
     const pending = () => wrapper.get('.pt-status-bar [data-pending]').text();
@@ -170,7 +170,7 @@ describe('PlayView', () => {
 
   it('a digit past 100 is refused but still gives feedback, from the pad and the keyboard', async () => {
     const wrapper = await mountAt('/play/1/easy');
-    await wrapper.get('.btn-group button[data-mode="direct"]').trigger('click');
+    await wrapper.get('.pt-mode-toggle button[data-mode="direct"]').trigger('click');
     for (const d of ['1', '0', '0']) await wrapper.get(`.pt-number-pad [data-key="${d}"]`).trigger('click');
     await wrapper.get('.pt-number-pad [data-key="5"]').trigger('click');
     expect(wrapper.get('.pt-status-bar [data-pending]').text()).toBe('100');
@@ -187,7 +187,7 @@ describe('PlayView', () => {
 
   it('an accepted digit does not flash the pending box', async () => {
     const wrapper = await mountAt('/play/1/easy');
-    await wrapper.get('.btn-group button[data-mode="direct"]').trigger('click');
+    await wrapper.get('.pt-mode-toggle button[data-mode="direct"]').trigger('click');
     await wrapper.get('.pt-board').trigger('keydown', { key: '4' });
     expect(wrapper.get('.pt-status-bar [data-pending]').text()).toBe('4');
     expect(wrapper.get('[data-pending-box]').classes()).not.toContain('is-rejected');
@@ -196,9 +196,9 @@ describe('PlayView', () => {
   it('shows the number pad only in direct mode', async () => {
     const wrapper = await mountAt('/play/1/easy');
     expect(wrapper.find('.pt-number-pad').exists()).toBe(false);
-    await wrapper.get('.btn-group button[data-mode="direct"]').trigger('click');
+    await wrapper.get('.pt-mode-toggle button[data-mode="direct"]').trigger('click');
     expect(wrapper.find('.pt-number-pad').exists()).toBe(true);
-    await wrapper.get('.btn-group button[data-mode="trail"]').trigger('click');
+    await wrapper.get('.pt-mode-toggle button[data-mode="trail"]').trigger('click');
     expect(wrapper.find('.pt-number-pad').exists()).toBe(false);
   });
 
@@ -206,7 +206,7 @@ describe('PlayView', () => {
     const wrapper = await mountAt('/play/1/easy');
     expect(wrapper.find('[data-action="toggleMode"]').exists()).toBe(false);
     expect(wrapper.find('.pt-play-actions [data-action="clear"]').exists()).toBe(false);
-    expect(wrapper.findAll('.btn-group button[data-mode]')).toHaveLength(2);
+    expect(wrapper.findAll('.pt-mode-toggle button[data-mode]')).toHaveLength(2);
   });
 
   it('a press on the board goes through the session', async () => {
