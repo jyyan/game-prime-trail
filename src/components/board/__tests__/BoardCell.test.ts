@@ -113,13 +113,13 @@ describe('BoardCell marks and trail', () => {
   });
 
   it.each([
-    ['reject', 'deadEnd.markReject'],
-    ['trap', 'deadEnd.markTrap'],
-    ['branch', 'demo.markBranch'],
-  ] as const)('mark=%s adds class and appends aria text', (mark, key) => {
+    ['reject', '不能放'],
+    ['trap', '會被困住的格子'],
+    ['branch', '退回的分歧點'],
+  ] as const)('mark=%s adds class and appends aria text', (mark, text) => {
     const btn = mount(BoardCell, { props: { ...base, mark } }).get('button');
     expect(btn.classes()).toContain(`is-mark-${mark}`);
-    expect(btn.attributes('aria-label')).toContain(t(key));
+    expect(btn.attributes('aria-label')).toContain(text);
   });
 
   it('trail adds is-trail and keeps the number text', () => {

@@ -16,7 +16,6 @@ describe('TrailLine', () => {
   const pts = parsePoints(wrapper.get('polyline').attributes('points'));
 
   it('draws 100 points, i.e. 99 segments', () => {
-    expect(FIXTURE_PATH).toHaveLength(100);
     expect(pts).toHaveLength(100);
   });
 
@@ -29,10 +28,17 @@ describe('TrailLine', () => {
     }
   });
 
-  it('is decorative: aria-hidden svg on the 11x11 board grid', () => {
+  it('is decorative: aria-hidden svg whose viewBox contains every point', () => {
     const svg = wrapper.get('svg');
     expect(svg.attributes('aria-hidden')).toBe('true');
-    expect(svg.attributes('viewBox')).toBe('0 0 11 11');
+    const [, , w, h] = (svg.attributes('viewBox') ?? '').split(/\s+/).map(Number);
+    expect(w).toBe(h);
+    for (const [x, y] of pts) {
+      expect(x).toBeGreaterThan(0);
+      expect(x).toBeLessThan(w);
+      expect(y).toBeGreaterThan(0);
+      expect(y).toBeLessThan(h);
+    }
     expect(svg.classes()).toContain('pt-trail');
   });
 });

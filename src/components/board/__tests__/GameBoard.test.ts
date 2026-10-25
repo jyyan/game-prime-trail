@@ -448,11 +448,11 @@ describe('GameBoard marks and trail (demo-playback A2)', () => {
     const c1 = wrapper.get('[data-cell="1"]');
     const c2 = wrapper.get('[data-cell="2"]');
     expect(c0.classes()).toContain('is-mark-reject');
-    expect(c0.attributes('aria-label')).toContain(t('deadEnd.markReject'));
+    expect(c0.attributes('aria-label')).toContain('不能放');
     expect(c1.classes()).toContain('is-mark-trap');
-    expect(c1.attributes('aria-label')).toContain(t('deadEnd.markTrap'));
+    expect(c1.attributes('aria-label')).toContain('會被困住的格子');
     expect(c2.classes()).toContain('is-mark-branch');
-    expect(c2.attributes('aria-label')).toContain(t('demo.markBranch'));
+    expect(c2.attributes('aria-label')).toContain('退回的分歧點');
     expect(wrapper.get('[data-cell="3"]').classes().join(' ')).not.toContain('is-mark');
   });
 

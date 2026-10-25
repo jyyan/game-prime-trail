@@ -272,10 +272,6 @@ $pt-highlight: var(--pt-hint);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pt-cell {
-    transition: none;
-  }
-
   .pt-cell.is-shake {
     animation: none;
     outline: 2px solid $pt-conflict;
