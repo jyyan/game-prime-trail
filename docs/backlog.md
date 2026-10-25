@@ -46,12 +46,14 @@
 - **R47 U-B2／U-B3 測試強度不足**【測試・低】：layer-U-B 審查指出：首頁與過關視窗的文案斷言以同一個 `t()` 比對；LevelPicker blur 測試以 setProps 手動驅動；隨機鈕與主按鈕檢查依賴 class 名稱；WinModal 焦點測試未驗 `autofocus`、新紀錄徽章測試未驗字級／字重（對比要求所在）、插圖測試只比 src 字串。來源 GAME-25、GAME-26。
 - **R49 「已過關不顯示操作提示」缺單元測試**【測試・低】：PlayView 的 `showHint` 有 `!won` 條件，但目前無法在提示仍顯示時過關（過關必經玩家填格，填格即收起提示；「提示」按鈕只高亮不代填），單元測試無路徑可達。日後出現不經玩家填格的過關途徑（自動填完、匯入盤面）時補上。來源 GAME-29。
 - **R50 ControlsHint 與 ControlsHelp 重複 `{token}`→`<kbd>` 切分與 `.pt-kbd` 樣式**【UX・低】：GAME-29 可動檔案不含共用檔，故兩元件各一份；可抽成 `src/components/help/KbdText.vue` 一處維護。來源 GAME-29。
-- **R51 標記與連線樣式無瀏覽器視覺驗證**【技術債・低】：GAME-32 只以 jsdom 測 class／DOM 與對比腳本，虛線 outline、✕ 角標、連線疊層與角落數字的實際外觀要等 GAME-34／GAME-35 接上畫面後在瀏覽器（或 e2e 截圖）目視確認。來源 GAME-32。
 - **R52 抖動期間角落數字與連線疊層的層次**【技術債・低】：`.pt-cell.is-shake` 的 transform 在動畫 150ms 內讓該格自成 stacking context，`trail` 模式下角落數字與連線疊層的上下關係可能短暫不同；目前過關後盤面 readonly 不會抖動，實務上不會同時發生。來源 GAME-32。
 - **R53 GAME-32 審查留下的測試與 DOM 細節**【測試・低】：(a) 非 `trail` 時 `<template v-else>` 讓按鈕內多兩個空字串 text anchor（childNodes 1→3，innerHTML／textContent 不變）；(b) GameBoard 的 trail 測試只數 `svg.pt-trail` 與 `.is-trail`，沒驗 GameBoard 把正確陣列傳給 TrailLine；(c) 角落數字測試未對照 grid 值。主 session 判定不擋合併。來源 GAME-32。
+- **R54 過關後龍頭框仍框在 100**【UI・低】：GAME-34 截圖可見過關後 `head` 仍傳給 GameBoard，100 那格保留黑色龍頭框，與連線終點重疊；可在 `won` 時不傳 `head`，或保留作為終點標示（需裁定）。另 375 寬時角落數字約 8px，偏小。來源 GAME-34。
+- **R55 GAME-33／GAME-34 測試強度不足**【測試・低】：layer-B 審查指出：demo-solver 未釘住原因的「第一個不成立」順序、Warnsdorff 與上右下左同分規則、`maxEvents` 用盡回 `solved: false` 的路徑，退路測試的「最接近 2」可能因同分而失效；PlayView 的 `noMove` 分支（rejected 標記與 `{n}`）無測試、`won` 守衛不影響任何測試、e2e 連線未驗依玩家盤面。主 session 判定不擋合併。來源 GAME-33、GAME-34。
 
 ## 已結
 
+- **R51 標記與連線樣式無瀏覽器視覺驗證**：GAME-34 以 e2e 截圖（375／1280：死路 ✕、虛線框、過關連線、角落數字）目視確認，結果記於 CLAUDE.LOG GAME-34 段。2026-10-25 GAME-34 合併。
 - **R48 精簡版 Bootstrap 缺 partial，SolutionView 切換鈕沒有群組樣式**：切換鈕改 scoped grid 兩等分相接、44px；「也是有效解」提示改 token 樣式；新增 `src/styles/__tests__/bootstrap-partials.test.ts` 防漂移（template 用到未 import partial 的 Bootstrap class 即失敗），順帶移除 InputModeToggle 無作用的 `btn-group`。2026-10-25 GAME-28 合併。
 - **R30 LevelPicker 空白欄位即顯示錯誤**：首頁地圖編號空白時只停用「開始」、不顯示錯誤；有值且非法、blur 或 Enter 後才顯示。2026-10-25 GAME-25 合併。
 - **R33 操作列「清除」語意未在 spec 定義**：UI refresh 移除操作列「清除」，接續模式用「復原」、指定模式用數字鍵盤「清除」。2026-10-25 GAME-24 合併。

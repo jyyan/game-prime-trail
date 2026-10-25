@@ -15,7 +15,9 @@ import StatusBar from '../components/ui/StatusBar.vue';
 import { formatMs, padId } from '../components/format';
 import { usePlaySession } from '../composables/usePlaySession';
 import { mergeUiPrefs, readUiPrefs } from '../composables/useUiPrefs';
-import { CELL_COUNT, type Difficulty, type InputMode } from '../core/types';
+import type { CellMark } from '../components/board/marks';
+import { findDeadEnd, trailOf, type DeadEnd } from '../core/dead-end';
+import { CELL_COUNT, type Cell, type Difficulty, type InputMode } from '../core/types';
 import { t } from '../i18n';
 
 const props = defineProps<{ id: string; difficulty: Difficulty }>();
@@ -49,6 +51,57 @@ watch(board, (b) => b?.focus(), { flush: 'post' });
 
 const state = computed(() => game.value?.state ?? null);
 const won = computed(() => state.value?.status === 'won');
+/** The player's legal trail 1…h (null when it breaks a rule); shared by the dead-end hint and the win line. */
+const playerTrail = computed(() => (game.value && state.value ? trailOf(state.value.grid, game.value.puzzle) : null));
+
+/**
+ * Dead-end hint (demo-playback spec §6): easy only, never on a won board. Recomputed from the grid,
+ * so undo, retreat, clear and restart drop it at once. Not a hint: `assisted` is untouched.
+ */
+const deadEnd = computed<DeadEnd | null>(() => {
+  const g = game.value;
+  const s = state.value;
+  if (!g || !s || s.difficulty !== 'easy' || s.status === 'won') return null;
+  const trail = playerTrail.value;
+  return trail ? findDeadEnd(g.puzzle, trail) : null;
+});
+
+const deadEndMarks = computed<ReadonlyMap<Cell, CellMark> | undefined>(() => {
+  const d = deadEnd.value;
+  const trail = playerTrail.value;
+  if (!d || !trail) return undefined;
+  const marks = new Map<Cell, CellMark>();
+  if (d.kind === 'noMove') {
+    for (const cell of d.rejected) marks.set(cell, 'reject');
+  } else {
+    marks.set(trail[trail.length - 1], 'reject');
+    for (const cell of d.cells) marks.set(cell, 'trap');
+  }
+  return marks;
+});
+
+const deadEndText = computed(() => {
+  const d = deadEnd.value;
+  if (!d) return '';
+  switch (d.kind) {
+    case 'far':
+      return t('deadEnd.far', { v: d.target ?? 0, dist: d.dist ?? 0, steps: d.steps ?? 0 });
+    case 'noMove':
+      return t('deadEnd.noMove', { n: (playerTrail.value?.length ?? 0) + 1 });
+    default:
+      return t(`deadEnd.${d.kind}`);
+  }
+});
+
+/**
+ * Completed line (spec §5.4), drawn from the player's own grid, not the reference path. A won board
+ * always has a full legal trail; a restored save holding a full legal trail draws it too.
+ */
+const winTrail = computed<readonly Cell[] | null>(() => {
+  const trail = playerTrail.value;
+  return trail && trail.length === CELL_COUNT ? trail : null;
+});
+
 const canUndo = computed(() => !won.value && (state.value?.undo.length ?? 0) > 0);
 
 const title = computed(() =>
@@ -186,12 +239,17 @@ function openPdf(): void {
           :highlight="highlight"
           :mode="state.inputMode"
           :readonly="won"
+          :marks="deadEndMarks"
+          :trail="winTrail"
           @press="session.onPress"
           @drag="session.onDrag"
           @key="onBoardKey"
         />
       </div>
       <div class="d-flex flex-column gap-2 mt-2">
+        <p v-if="deadEnd" class="pt-play__dead-end" data-dead-end aria-live="polite">
+          <span aria-hidden="true">✕ </span>{{ deadEndText }}
+        </p>
         <StatusBar
           :steps="state.steps"
           :assisted="state.assisted"
@@ -249,6 +307,14 @@ function openPdf(): void {
 <style scoped>
 .pt-play {
   max-width: 560px;
+}
+
+.pt-play__dead-end {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--pt-danger);
+  overflow-wrap: anywhere;
 }
 
 /* .pt-play__board-wrap deliberately sets no overflow: any non-visible overflow-x also turns
