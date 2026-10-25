@@ -52,6 +52,11 @@ describe('index.html SEO/GEO meta', () => {
     expect(html).toContain('name="viewport"');
   });
 
+  it('loads the GA4 tag', () => {
+    expect(html).toContain('https://www.googletagmanager.com/gtag/js?id=G-4N1HLCB39H');
+    expect(html).toContain("gtag('config', 'G-4N1HLCB39H');");
+  });
+
   it('ships robots, sitemap and llms.txt with absolute URLs', () => {
     expect(read('public/robots.txt')).toContain(`Sitemap: ${ORIGIN}/sitemap.xml`);
     expect(read('public/sitemap.xml')).toContain(`<loc>${ORIGIN}/</loc>`);
