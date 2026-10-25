@@ -201,6 +201,41 @@ describe('HomeView', () => {
     expect(wrapper.find('[data-invalid-id]').text()).toBe(t('picker.invalidId', { max: 3 }));
   });
 
+  it('keeps the demo button visible when the rules card is collapsed', async () => {
+    const wrapper = await mountHome();
+    const demo = () => wrapper.find('[data-rules] button[data-action="demo"]');
+    expect(demo().exists()).toBe(true);
+    expect(demo().text()).toBe(t('demo.open'));
+    await wrapper.find('button[data-action="toggleRules"]').trigger('click');
+    expect(rulesShown(wrapper)).toBe(false);
+    expect(demo().exists()).toBe(true);
+    // Not inside the collapsible body, so v-show does not hide it.
+    expect(wrapper.find('[data-rules-body] button[data-action="demo"]').exists()).toBe(false);
+    expect(demo().attributes('style') ?? '').not.toContain('display: none');
+    expect(demo().attributes('disabled')).toBeUndefined();
+  });
+
+  it('opens the demo dialog from the demo button', async () => {
+    const wrapper = await mountHome();
+    // Only the wiring is checked here (playback and the error line are covered by DemoDialog.test.ts).
+    expect(document.body.querySelector('[data-demo]')).toBeNull();
+    await wrapper.find('button[data-action="demo"]').trigger('click');
+    await flushPromises();
+    expect(document.body.querySelector('[role="dialog"] [data-demo]')).not.toBeNull();
+    expect(document.body.querySelector('.modal-title')?.textContent).toBe(t('demo.title'));
+    (document.body.querySelector('.btn-close') as HTMLButtonElement).click();
+    await flushPromises();
+    expect(document.body.querySelector('[data-demo]')).toBeNull();
+    wrapper.unmount();
+  });
+
+  it('shows the demo button busy while the library loads', async () => {
+    const wrapper = await mountHome(() => new Promise(() => {}));
+    const demo = wrapper.find('button[data-action="demo"]');
+    expect(demo.attributes('disabled')).toBeDefined();
+    expect(demo.attributes('aria-busy')).toBe('true');
+  });
+
   it('shows a load error when the library fails to parse', async () => {
     const wrapper = await mountHome(() => Promise.resolve({ schema: 999 }));
     expect(useLevelStore().status.value).toBe('error');

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import DemoDialog from '../components/demo/DemoDialog.vue';
 import LevelPicker from '../components/picker/LevelPicker.vue';
 import { useLevelStore } from '../composables/useLevelStore';
 import { useProgress } from '../composables/useProgress';
@@ -46,6 +47,9 @@ function toggleRules(): void {
   mergeUiPrefs({ rulesCollapsed: rulesCollapsed.value });
 }
 
+// Demo dialog (demo-playback spec §5.1); it loads the library itself if needed.
+const demoOpen = ref(false);
+
 function onRandom(): void {
   // randomId() throws unless the store is ready (backlog R22).
   if (status.value === 'ready') levelId.value = store.randomId();
@@ -76,17 +80,30 @@ onMounted(() => {
     </header>
 
     <section class="pt-card mb-3" data-rules :data-collapsed="rulesCollapsed ? 'true' : 'false'">
-      <button
-        type="button"
-        class="pt-rules-toggle d-flex justify-content-between align-items-center w-100"
-        data-action="toggleRules"
-        :aria-expanded="rulesCollapsed ? 'false' : 'true'"
-        :aria-controls="rulesId"
-        @click="toggleRules"
-      >
-        <h2 class="h6 fw-bold mb-0">{{ t('home.rulesTitle') }}</h2>
-        <span class="pt-muted small">{{ rulesCollapsed ? t('home.rulesShow') : t('home.rulesHide') }}</span>
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button
+          type="button"
+          class="pt-rules-toggle d-flex justify-content-between align-items-center flex-grow-1"
+          data-action="toggleRules"
+          :aria-expanded="rulesCollapsed ? 'false' : 'true'"
+          :aria-controls="rulesId"
+          @click="toggleRules"
+        >
+          <h2 class="h6 fw-bold mb-0">{{ t('home.rulesTitle') }}</h2>
+          <span class="pt-muted small">{{ rulesCollapsed ? t('home.rulesShow') : t('home.rulesHide') }}</span>
+        </button>
+        <!-- Outside the toggle and the collapsible body, so it stays visible when the card is collapsed. -->
+        <button
+          type="button"
+          class="btn btn-outline-primary btn-sm pt-demo-open flex-shrink-0"
+          data-action="demo"
+          :disabled="status === 'loading'"
+          :aria-busy="status === 'loading' ? 'true' : 'false'"
+          @click="demoOpen = true"
+        >
+          {{ t('demo.open') }}
+        </button>
+      </div>
       <ol v-show="!rulesCollapsed" :id="rulesId" class="pt-rules mb-0 mt-2" data-rules-body>
         <li>{{ t('home.rule1') }}</li>
         <li>{{ t('home.rule2') }}</li>
@@ -123,6 +140,7 @@ onMounted(() => {
       {{ t('home.loadError') }}
     </div>
     <div v-else class="pt-muted" data-state="loading">{{ t('play.loading') }}</div>
+    <DemoDialog v-model="demoOpen" />
   </section>
 </template>
 
@@ -163,6 +181,11 @@ onMounted(() => {
   background: none;
   color: inherit;
   text-align: start;
+}
+
+.pt-demo-open {
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .pt-rules {

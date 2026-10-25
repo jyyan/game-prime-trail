@@ -4,7 +4,7 @@ export const demo = {
   title: '示範：怎麼走完 1 到 100',
   loading: '正在準備示範…',
   loadFailed: '示範載入失敗，請稍後再試。',
-  mapInfo: '{difficulty}　第 {n} 張',
+  mapInfo: '第 {n} 張地圖・{difficulty}難度｜退回 {k} 次',
   intro: '從龍頭的 {n} 出發。黃格是質數的位置，一格一格往相鄰的空格填。',
   filling: '依序往下填：{n}',
   prime: '{n} 是質數，必須走進黃格。',
