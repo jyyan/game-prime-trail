@@ -48,11 +48,12 @@
 - **R50 ControlsHint 與 ControlsHelp 重複 `{token}`→`<kbd>` 切分與 `.pt-kbd` 樣式**【UX・低】：GAME-29 可動檔案不含共用檔，故兩元件各一份；可抽成 `src/components/help/KbdText.vue` 一處維護。來源 GAME-29。
 - **R52 抖動期間角落數字與連線疊層的層次**【技術債・低】：`.pt-cell.is-shake` 的 transform 在動畫 150ms 內讓該格自成 stacking context，`trail` 模式下角落數字與連線疊層的上下關係可能短暫不同；目前過關後盤面 readonly 不會抖動，實務上不會同時發生。來源 GAME-32。
 - **R53 GAME-32 審查留下的測試與 DOM 細節**【測試・低】：(a) 非 `trail` 時 `<template v-else>` 讓按鈕內多兩個空字串 text anchor（childNodes 1→3，innerHTML／textContent 不變）；(b) GameBoard 的 trail 測試只數 `svg.pt-trail` 與 `.is-trail`，沒驗 GameBoard 把正確陣列傳給 TrailLine；(c) 角落數字測試未對照 grid 值。主 session 判定不擋合併。來源 GAME-32。
-- **R54 過關後龍頭框仍框在 100**【UI・低】：GAME-34 截圖可見過關後 `head` 仍傳給 GameBoard，100 那格保留黑色龍頭框，與連線終點重疊；可在 `won` 時不傳 `head`，或保留作為終點標示（需裁定）。另 375 寬時角落數字約 8px，偏小。來源 GAME-34。
 - **R55 GAME-33／GAME-34 測試強度不足**【測試・低】：layer-B 審查指出：demo-solver 未釘住原因的「第一個不成立」順序、Warnsdorff 與上右下左同分規則、`maxEvents` 用盡回 `solved: false` 的路徑，退路測試的「最接近 2」可能因同分而失效；PlayView 的 `noMove` 分支（rejected 標記與 `{n}`）無測試、`won` 守衛不影響任何測試、e2e 連線未驗依玩家盤面。主 session 判定不擋合併。來源 GAME-33、GAME-34。
+- **R56 375 寬角落數字偏小**【UI・低】：過關連線時角落數字在 375px 寬約 8px，可讀但偏小，之後評估字級或格內排版。來源 GAME-34、GAME-36。
 
 ## 已結
 
+- **R54 過關後龍頭框仍框在 100**：使用者裁定過關後拿掉（spec D12）；PlayView 在畫連線時（`winTrail` 非 null）不傳 `head`，含恢復完整解存檔的情況。2026-10-25 GAME-36 合併。
 - **R51 標記與連線樣式無瀏覽器視覺驗證**：GAME-34 以 e2e 截圖（375／1280：死路 ✕、虛線框、過關連線、角落數字）目視確認，結果記於 CLAUDE.LOG GAME-34 段。2026-10-25 GAME-34 合併。
 - **R48 精簡版 Bootstrap 缺 partial，SolutionView 切換鈕沒有群組樣式**：切換鈕改 scoped grid 兩等分相接、44px；「也是有效解」提示改 token 樣式；新增 `src/styles/__tests__/bootstrap-partials.test.ts` 防漂移（template 用到未 import partial 的 Bootstrap class 即失敗），順帶移除 InputModeToggle 無作用的 `btn-group`。2026-10-25 GAME-28 合併。
 - **R30 LevelPicker 空白欄位即顯示錯誤**：首頁地圖編號空白時只停用「開始」、不顯示錯誤；有值且非法、blur 或 Enter 後才顯示。2026-10-25 GAME-25 合併。
