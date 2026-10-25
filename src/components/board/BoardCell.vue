@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, h } from 'vue';
 import { colOf, rowOf } from '../../core/geometry';
 import type { Cell } from '../../core/types';
 import { t } from '../../i18n';
@@ -18,6 +18,12 @@ const props = defineProps<{
   mark?: CellMark;
   trail?: boolean;
 }>();
+
+// Functional component returning a string yields a bare text node (no Fragment anchors).
+// With trail the number moves into a corner span that stacks above the trail line overlay.
+const CellText = (p: { trail: boolean; text: string }) =>
+  p.trail ? h('span', { class: 'pt-num-corner' }, p.text) : p.text;
+CellText.props = ['trail', 'text'];
 
 const row = computed(() => rowOf(props.cell));
 const col = computed(() => colOf(props.cell));
@@ -63,8 +69,6 @@ const label = computed(() => {
     :aria-label="label"
     tabindex="-1"
   >
-    <span v-if="trail" class="pt-num-corner">{{ value > 0 ? value : '' }}</span>
-    <!-- Same text node as before the trail prop existed (" 7 " / "  "): the whitespace is part of the DOM contract. -->
-    <template v-else>{{ ` ${value > 0 ? value : ''} ` }}</template>
+    <CellText :trail="trail === true" :text="value > 0 ? String(value) : ''" />
   </button>
 </template>

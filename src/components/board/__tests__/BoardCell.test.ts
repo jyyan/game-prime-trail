@@ -129,11 +129,14 @@ describe('BoardCell marks and trail', () => {
     expect(btn.get('span.pt-num-corner').text()).toBe('7');
   });
 
-  it('without trail the number is a bare text node with the original surrounding whitespace', () => {
+  it('without trail the number is a bare text node with no surrounding whitespace', () => {
     const btn = mount(BoardCell, { props: { ...base, value: 7 } }).get('button');
     expect(btn.find('.pt-num-corner').exists()).toBe(false);
-    expect(btn.element.textContent).toBe(' 7 ');
+    expect(btn.element.textContent).toBe('7');
+    expect(btn.element.childNodes).toHaveLength(1);
+    expect(btn.element.childNodes[0].nodeType).toBe(Node.TEXT_NODE);
     const empty = mount(BoardCell, { props: { ...base, value: 0 } }).get('button');
-    expect(empty.element.textContent).toBe('  ');
+    expect(empty.element.textContent).toBe('');
+    expect(empty.element.childNodes.length).toBeLessThanOrEqual(1);
   });
 });
