@@ -1,0 +1,10 @@
+## 2026-10-25 GAME-33 示範 AI 核心（spec：docs/superpowers/specs/2026-10-25-demo-playback.md §4、§5.3）
+
+- **起因**：plan Task B1（taskboard GAME-33）。首頁「示範怎玩」要一個「像人」的搜尋，會走進死路、說出原因再退回；`solver.ts` 剪枝太強幾乎不退回，所以另寫純 TS 的 `src/core/demo-solver.ts`，不用於求解玩家盤面。
+- **裁定（使用者）**：無（沿用 spec 定稿：試作模式、節奏表、挑圖條件與退路）。
+- **做法**：DFS 從 1 放到 100，候選檢查依 spec §4.2 表的順序（used、otherGiven、givenElsewhere、needPrime／notPrime，之後把 x 假設性接到 trail 尾端呼叫 A1 的 `findDeadEnd`，回 `null` 或 `noMove` 視為可走，`far`／`trap`／`twoEnds`／`split` 轉成原因），第一個不成立的就是該格原因，所以「卡住原因」與「為什麼不走」是同一份判定，不會說一套做一套。候選排序 Warnsdorff（未填鄰格少者先），同分用 上、右、下、左 的穩定排序。只有「一個候選都沒有」才記 `stuck`；退回途中某步候選試完但試過至少一個時不另記，因此每段連續 `unplace` 前恰有一筆 `stuck`，`backtracks` = stuck 數 = 退回段數。`playbackMs` 與挑圖共用 `DEMO_PACING`，C1 播放也必須照它排程。`pickDemo` 每輪以部分 Fisher–Yates 抽最多 80 個不重複 id；主條件不合時取該輪「解完、退回 1–8、≤ 360 秒」中退回段數最接近 2 的；兩輪都沒有就丟 `Error`（交給 UI 顯示載入失敗）。挑圖時把單張圖的事件上限縮成 357（每個事件播放至少 1 秒，超過必定 > 360 秒），結果與跑滿 4000 相同但省時。行為與試作 `ai.js`（strand＋connect＋warns）在前 200 張逐張比對一致（退回段數、事件數相同）。
+- **守門**：新增 `src/core/__tests__/demo-solver.test.ts` 9 案：`playbackMs` 手算 2 案；前 50 張題庫重放（place 是 head 空鄰格、unplace 從最新數字收、每段 unplace 前恰為 stuck、backtracks 一致、解完時 `isSolved`），每筆 stuck 的原因涵蓋 head 全部鄰格，並以測試檔內獨立寫的鄰格計數、BFS、曼哈頓距離逐條驗證屬實（不 import `dead-end.ts`）；決定性 1 案；`pickDemo` 5 案（固定 seed 可重現且在 2–4／≤ 260／≤ 360 秒內、題庫分類健全、注入只有退路圖時取最接近 2 的、全不合格時兩輪後丟錯且每輪 id 不重複、每輪最多 80 張）。DoD：typecheck 綠；`pnpm test` 57 檔 643 passed／1 skipped；build 綠。
+- **量測**（Node、本機桌機，`pnpm exec tsx`）：`pickDemo` 對 1000 張題庫連跑 20 次（先暖機一次）平均 11.3 ms、最大 43.4 ms；1000 張全跑 `traceDemo` 共約 1.15 s。依 plan C1 的門檻（平均 > 30 ms 才分批），同步即可。全庫統計：解完 998／1000，退回段數中位數 20、事件數中位數 249（與 spec 試作數據相符），但符合主條件（2–4 段、≤ 260 事件、≤ 360 秒）的只有 51 張，約 5%，不是 spec §4.3 寫的約 1/6；一輪 80 張全不中的機率約 1.5%，此時走退路圖（主條件外、退回 1–8 段的圖約占 11%），兩輪都落空的機率可忽略。前 50 張 stuck 原因分布：used 2133、far 1135、otherGiven 782、twoEnds 575、split 391、givenElsewhere 177、trap 144；簡單難度質數全部是 given，`needPrime`／`notPrime` 會先被 givenElsewhere／otherGiven 攔下，實際不出現。
+- **流程**：implement-layer workflow 層 B，worktree 分支 `layer-B/B1`，基底 fe5f76f。
+- **踩坑**：先寫實作再補測試（未嚴格先看到測試失敗）；以手動比對試作與突變式分類（把「2–4 段但事件過多」從 never 池剔除，避免退路測試誤中）補足。
+- **遺留**：見 `docs/backlog/drafts/GAME-33.md`（spec §4.3 接受率數字更正）。
