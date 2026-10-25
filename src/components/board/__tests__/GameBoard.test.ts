@@ -460,6 +460,12 @@ describe('GameBoard marks and trail (demo-playback A2)', () => {
     const wrapper = mountBoard({ trail: FIXTURE_PATH } as Partial<Props>);
     expect(wrapper.findAll('svg.pt-trail')).toHaveLength(1);
     expect(wrapper.findAll('.pt-cell.is-trail')).toHaveLength(100);
+    const corners = wrapper.findAll('.pt-cell > span.pt-num-corner');
+    expect(corners).toHaveLength(100);
+    expect(corners.some((c) => c.text() !== '')).toBe(true);
+    for (const cell of wrapper.findAll('.pt-cell')) {
+      expect(cell.get('span.pt-num-corner').text()).toBe(cell.text());
+    }
   });
 
   it('trail null behaves like no trail', () => {

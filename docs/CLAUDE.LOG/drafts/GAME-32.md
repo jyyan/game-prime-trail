@@ -7,3 +7,5 @@
 標記的形狀刻意與 `.is-conflict` 的實線紅框區分：reject 是淡紅底加右上 ✕（`::after`），trap 是紅色虛線 outline，branch 是藍色虛線 outline，不只靠顏色。新 token（`--pt-trail`、`--pt-dead-bg`、`--pt-dead-line`、`--pt-branch-line`）寫成十六進位字面值，因為 `check-contrast.ts` 只解析 hex，不解析 `var()`；`--pt-dead-line` 與 `--pt-danger` 同值、`--pt-branch-line` 與 `--pt-primary` 同值，對比已登記並通過。
 
 文字進 `demo.ts`（spec §5.3 兩張表）與 `deadEnd.ts`（§6.2 說明行，主詞為玩家）。`dead-end.ts` 核心屬 A1，這裡只備好 kind 對應的字串（far／trap／twoEnds／split／noMove）。
+
+審查修正：非 `trail` 時數字必須維持原本單一文字節點（` 7 ` ／ 兩個空白），所以 `v-else` 分支用 template literal 明確帶出前後空白，因為模板編譯器會移除元素邊界的純空白；並補測 `textContent` 與角落 span 的存在，避免 `btn.text()` 會 trim 而漏掉差異。

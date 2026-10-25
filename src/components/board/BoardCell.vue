@@ -64,6 +64,7 @@ const label = computed(() => {
     tabindex="-1"
   >
     <span v-if="trail" class="pt-num-corner">{{ value > 0 ? value : '' }}</span>
-    <template v-else>{{ value > 0 ? value : '' }}</template>
+    <!-- Same text node as before the trail prop existed (" 7 " / "  "): the whitespace is part of the DOM contract. -->
+    <template v-else>{{ ` ${value > 0 ? value : ''} ` }}</template>
   </button>
 </template>
