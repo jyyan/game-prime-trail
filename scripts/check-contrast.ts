@@ -68,6 +68,14 @@ const pairs: Array<[string, string, Kind, string]> = [
   ['--pt-danger', '--pt-surface', 'text', 'outline-danger button／error text on cards'],
   ['#fff', '--pt-danger', 'text', 'btn-danger label'],
   ['#fff', '--pt-pink', 'large', 'new-record badge (must be large／bold text)'],
+  // Controls hint card and help dialog (controls-help spec §4.4, §5)
+  ['--pt-text', '--pt-surface', 'text', 'controls hint text; help dialog body and mode headings'],
+  ['--pt-primary-strong', '--pt-surface', 'text', 'controls hint title; help section headings'],
+  ['--pt-text-muted', '--pt-surface', 'text', 'controls hint "see help any time" line'],
+  ['--pt-text', '--pt-bg', 'text', '<kbd> key label (pt-kbd)'],
+  ['--pt-text-muted', '--pt-bg', 'ui', '<kbd> key outline'],
+  ['--pt-primary', '--pt-bg', 'ui', 'controls hint left accent bar on page'],
+  ['--pt-text-muted', '--pt-bg', 'text', 'top bar help button "?" (outline-secondary)'],
   // Board numbers (Review Focus 3: conflict red and player blue on the yellow prime cell)
   ['--pt-text', '--pt-prime', 'text', 'given number on prime cell'],
   ['--pt-primary-strong', '--pt-surface', 'text', 'player number (is-filled) on white cell'],

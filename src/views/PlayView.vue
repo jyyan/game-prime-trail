@@ -4,6 +4,8 @@ import { RouterLink, useRouter } from 'vue-router';
 import GameBoard from '../components/board/GameBoard.vue';
 import PdfExportDialog from '../components/game/PdfExportDialog.vue';
 import PlayActions from '../components/game/PlayActions.vue';
+import ControlsHelp from '../components/help/ControlsHelp.vue';
+import ControlsHint from '../components/help/ControlsHint.vue';
 import SolutionView from '../components/game/SolutionView.vue';
 import WinModal from '../components/game/WinModal.vue';
 import InputModeToggle from '../components/input/InputModeToggle.vue';
@@ -12,6 +14,7 @@ import BsModal from '../components/ui/BsModal.vue';
 import StatusBar from '../components/ui/StatusBar.vue';
 import { formatMs, padId } from '../components/format';
 import { usePlaySession } from '../composables/usePlaySession';
+import { mergeUiPrefs, readUiPrefs } from '../composables/useUiPrefs';
 import { CELL_COUNT, type Difficulty, type InputMode } from '../core/types';
 import { t } from '../i18n';
 
@@ -90,6 +93,55 @@ function onNextRandom(): void {
   if (id !== null) void router.push({ name: 'play', params: { id: String(id), difficulty: props.difficulty } });
 }
 
+// Controls help (spec 2026-10-25-controls-help §4–§5). Touch vs mouse/keyboard is read once the
+// game is ready; no user-agent sniffing. Without matchMedia it is mouse/keyboard.
+type Device = 'touch' | 'pointer';
+function detectDevice(): Device {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return 'pointer';
+  try {
+    return window.matchMedia('(pointer: coarse)').matches ? 'touch' : 'pointer';
+  } catch {
+    return 'pointer';
+  }
+}
+const device = ref<Device>('pointer');
+watch(
+  status,
+  (s) => {
+    if (s === 'ready') device.value = detectDevice();
+  },
+  { immediate: true },
+);
+
+const hintSeen = ref(readUiPrefs().controlsHintSeen === true);
+const showHint = computed(() => !hintSeen.value && !won.value);
+const showHelp = ref(false);
+
+/** Hides the hint for good. A failed write still hides it for this visit (§4.1). */
+function markHintSeen(): void {
+  if (hintSeen.value) return;
+  hintSeen.value = true;
+  mergeUiPrefs({ controlsHintSeen: true });
+}
+
+// Only the player's own fills count (§4.2): not hints, undo, retreats, restarts or restores.
+watch(session.playerFills, (n, old) => {
+  if (n > old) markHintSeen();
+});
+// A restored game with moves means the player already knows the controls.
+watch(
+  game,
+  (g) => {
+    if (g && g.state.steps > 0) markHintSeen();
+  },
+  { immediate: true },
+);
+
+function openHelp(): void {
+  markHintSeen();
+  showHelp.value = true;
+}
+
 function openPdf(): void {
   showWin.value = false;
   showPdf.value = true;
@@ -112,7 +164,17 @@ function openPdf(): void {
         <span class="pt-play-topbar__timer pt-num" role="timer" data-timer :aria-label="t('status.time', { time: elapsed })">{{
           elapsed
         }}</span>
+        <button
+          type="button"
+          class="btn btn-outline-secondary pt-play-topbar__help"
+          data-action="help"
+          :aria-label="t('help.button')"
+          @click="openHelp"
+        >
+          <span aria-hidden="true">?</span>
+        </button>
       </header>
+      <ControlsHint v-if="showHint" :device="device" :mode="state.inputMode" @dismiss="markHintSeen" />
       <div class="pt-play__board-wrap">
         <GameBoard
           ref="board"
@@ -179,6 +241,7 @@ function openPdf(): void {
         @mark-assisted="session.markAssisted"
         @export="session.exportPdf"
       />
+      <ControlsHelp v-model="showHelp" :device="device" />
     </template>
   </section>
 </template>
@@ -194,7 +257,7 @@ function openPdf(): void {
 
 .pt-play-topbar {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
@@ -206,6 +269,19 @@ function openPdf(): void {
   gap: 0.25rem;
   min-height: 44px;
   white-space: nowrap;
+}
+
+.pt-play-topbar__help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-family: var(--pt-font-num);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .pt-play-topbar__title {

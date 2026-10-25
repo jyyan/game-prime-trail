@@ -318,6 +318,209 @@ describe('PlayView', () => {
   });
 });
 
+// Controls-help spec §4–§5: the first-time hint card and the top bar's help dialog.
+describe('PlayView: controls hint and help', () => {
+  const UI = 'prime-trail:v1:ui';
+  const hintCard = (w: VueWrapper) => w.find('[data-controls-hint]');
+  const storedUi = () => JSON.parse(localStorage.getItem(UI) ?? 'null') as Record<string, unknown> | null;
+  const helpDialog = () => q('.modal [data-help-section]')?.closest<HTMLElement>('.modal') ?? null;
+
+  function stubPointer(coarse: boolean): void {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({ matches: coarse && query === '(pointer: coarse)', media: query })),
+    );
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows the hint between the top bar and the board on a first visit', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    const card = hintCard(wrapper);
+    expect(card.exists()).toBe(true);
+    expect(card.attributes('role')).toBe('note');
+    const topbar = wrapper.get('.pt-play-topbar').element;
+    const boardWrap = wrapper.get('.pt-play__board-wrap').element;
+    expect(topbar.nextElementSibling).toBe(card.element);
+    expect(card.element.nextElementSibling).toBe(boardWrap);
+    // It does not take focus from the board.
+    expect(document.activeElement).toBe(wrapper.get('.pt-board').element);
+  });
+
+  it('a press that fills a cell hides it and remembers that', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await cellAt(wrapper, FIXTURE_PATH[3]).trigger('pointerdown');
+    expect(hintCard(wrapper).exists()).toBe(false);
+    expect(storedUi()).toEqual({ controlsHintSeen: true });
+  });
+
+  it('an arrow key that extends hides it', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('.pt-board').trigger('keydown', { key: 'ArrowDown' });
+    expect(hintCard(wrapper).exists()).toBe(false);
+    expect(storedUi()?.controlsHintSeen).toBe(true);
+  });
+
+  it('a direct-mode confirm that fills hides it', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('.pt-mode-toggle button[data-mode="direct"]').trigger('click');
+    await cellAt(wrapper, 29).trigger('pointerdown');
+    await wrapper.get('.pt-number-pad [data-key="4"]').trigger('click');
+    expect(hintCard(wrapper).exists()).toBe(true);
+    await wrapper.get('.pt-number-pad [data-key="confirm"]').trigger('click');
+    expect(hintCard(wrapper).exists()).toBe(false);
+  });
+
+  it('a multi-cell drag writes the flag once', async () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    const wrapper = await mountAt('/play/1/easy');
+    const boardEl = wrapper.get('.pt-board');
+    const doc = document as { elementFromPoint: unknown };
+    const original = doc.elementFromPoint;
+    try {
+      await cellAt(wrapper, FIXTURE_PATH[3]).trigger('pointerdown', { pointerId: 1 });
+      for (const n of [6, 8]) {
+        const target = cellAt(wrapper, FIXTURE_PATH[n - 1]).element;
+        doc.elementFromPoint = vi.fn(() => target); // jsdom has no layout
+        await boardEl.trigger('pointermove', { pointerId: 1 });
+      }
+      await boardEl.trigger('pointerup', { pointerId: 1 });
+    } finally {
+      doc.elementFromPoint = original;
+    }
+    expect(cellAt(wrapper, FIXTURE_PATH[7]).text()).toBe('8');
+    expect(hintCard(wrapper).exists()).toBe(false);
+    expect(setItem.mock.calls.filter(([k]) => k === UI)).toHaveLength(1);
+  });
+
+  it('hint, undo, rejected presses and restart leave it showing', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('[data-action="hint"]').trigger('click');
+    await cellAt(wrapper, 55).trigger('pointerdown'); // rejected
+    await wrapper.get('[data-action="undo"]').trigger('click');
+    await wrapper.get('.pt-board').trigger('keydown', { key: 'Backspace' });
+    await wrapper.get('.pt-board').trigger('keydown', { key: 'z', ctrlKey: true });
+    await wrapper.get('.pt-board').trigger('keydown', { key: 'Tab' }); // to direct
+    await wrapper.get('.pt-board').trigger('keydown', { key: 'Backspace' });
+    await wrapper.get('.pt-board').trigger('keydown', { key: 'Tab' }); // back to trail
+    await menuAction(wrapper, 'restart');
+    await settleConfirm(true);
+    await flushPromises();
+    expect(hintCard(wrapper).exists()).toBe(true);
+    expect(storedUi()?.controlsHintSeen).toBeUndefined();
+  });
+
+  it('the close button hides it and remembers that', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('[data-action="dismissHint"]').trigger('click');
+    expect(hintCard(wrapper).exists()).toBe(false);
+    expect(storedUi()).toEqual({ controlsHintSeen: true });
+  });
+
+  it('opening help hides it, remembers that, and opens the dialog', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    const help = wrapper.get('[data-action="help"]');
+    expect(help.attributes('aria-label')).toBe('操作說明');
+    await help.trigger('click');
+    await flushPromises();
+    expect(hintCard(wrapper).exists()).toBe(false);
+    expect(storedUi()?.controlsHintSeen).toBe(true);
+    expect(helpDialog()).not.toBeNull();
+    await click(helpDialog()!.querySelector<HTMLElement>('.btn-close'));
+    expect(helpDialog()).toBeNull();
+    // Help stays available after the hint is gone.
+    await wrapper.get('[data-action="help"]').trigger('click');
+    await flushPromises();
+    expect(helpDialog()).not.toBeNull();
+  });
+
+  it('the help button is the last item of the top bar, after the timer', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    const bar = wrapper.get('.pt-play-topbar').element;
+    expect(bar.lastElementChild?.getAttribute('data-action')).toBe('help');
+    expect(bar.lastElementChild?.previousElementSibling?.hasAttribute('data-timer')).toBe(true);
+  });
+
+  it('does not show once seen, and keeps the home page flag', async () => {
+    localStorage.setItem(UI, JSON.stringify({ rulesCollapsed: true, controlsHintSeen: true }));
+    const wrapper = await mountAt('/play/1/easy');
+    expect(hintCard(wrapper).exists()).toBe(false);
+    expect(wrapper.find('[data-action="help"]').exists()).toBe(true);
+  });
+
+  it('a first look keeps rulesCollapsed when it writes the flag', async () => {
+    localStorage.setItem(UI, JSON.stringify({ rulesCollapsed: true }));
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('[data-action="dismissHint"]').trigger('click');
+    expect(storedUi()).toEqual({ rulesCollapsed: true, controlsHintSeen: true });
+  });
+
+  it('a broken ui value counts as not seen', async () => {
+    localStorage.setItem(UI, '[1]');
+    const wrapper = await mountAt('/play/1/easy');
+    expect(hintCard(wrapper).exists()).toBe(true);
+  });
+
+  it('a restored save with moves does not show it and records it as seen', async () => {
+    const wrapper1 = await mountAt('/play/1/easy');
+    await pressPath(wrapper1, 6);
+    wrappers.splice(0).forEach((w) => w.unmount()); // flushes the save
+    localStorage.removeItem(UI);
+    const wrapper = await mountAt('/play/1/easy');
+    expect(wrapper.find('.pt-status-bar [data-steps]').text()).not.toBe('步數 0');
+    expect(hintCard(wrapper).exists()).toBe(false);
+    expect(storedUi()?.controlsHintSeen).toBe(true);
+  });
+
+  it('without matchMedia it shows the keyboard text', async () => {
+    const wrapper = await mountAt('/play/1/easy');
+    expect(hintCard(wrapper).text()).toContain('方向鍵');
+    expect(hintCard(wrapper).find('kbd').exists()).toBe(true);
+  });
+
+  it('a fine pointer shows the keyboard text and lists the keyboard help first', async () => {
+    stubPointer(false);
+    const wrapper = await mountAt('/play/1/easy');
+    expect(hintCard(wrapper).text()).toContain('方向鍵');
+    await wrapper.get('[data-action="help"]').trigger('click');
+    await flushPromises();
+    expect(helpDialog()!.querySelector<HTMLElement>('[data-help-section]')!.dataset.helpSection).toBe('pointer');
+  });
+
+  it('a coarse pointer shows the touch text and lists the touch help first', async () => {
+    stubPointer(true);
+    const wrapper = await mountAt('/play/1/easy');
+    expect(hintCard(wrapper).text()).toContain('拖曳');
+    expect(hintCard(wrapper).find('kbd').exists()).toBe(false);
+    await wrapper.get('[data-action="help"]').trigger('click');
+    await flushPromises();
+    expect(helpDialog()!.querySelector<HTMLElement>('[data-help-section]')!.dataset.helpSection).toBe('touch');
+  });
+
+  it('switching to direct mode switches the hint text', async () => {
+    stubPointer(true);
+    const wrapper = await mountAt('/play/1/easy');
+    expect(hintCard(wrapper).text()).toContain('拖曳');
+    await wrapper.get('.pt-mode-toggle button[data-mode="direct"]').trigger('click');
+    expect(hintCard(wrapper).text()).not.toContain('拖曳');
+    expect(hintCard(wrapper).text()).toContain('數字鍵盤');
+  });
+
+  it('while help is open the board keys do nothing; Esc closes it', async () => {
+    localStorage.setItem(UI, JSON.stringify({ controlsHintSeen: true }));
+    const wrapper = await mountAt('/play/1/easy');
+    await wrapper.get('[data-action="help"]').trigger('click');
+    await flushPromises();
+    expect(helpDialog()).not.toBeNull();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await flushPromises();
+    expect(cellAt(wrapper, 29).text()).toBe('');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await flushPromises();
+    expect(helpDialog()).toBeNull();
+  });
+});
+
 describe('PlayView: winning', () => {
   it('a first clear opens WinModal with the new-best badges and the bests', async () => {
     const wrapper = await mountAt('/play/1/easy');

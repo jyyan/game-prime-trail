@@ -3,6 +3,7 @@ import { board } from './board';
 import { common } from './common';
 import { conflict } from './conflict';
 import { difficulty } from './difficulty';
+import { help } from './help';
 import { home } from './home';
 import { input } from './input';
 import { pdf } from './pdf';
@@ -26,4 +27,5 @@ export const zhTW = {
   pdf,
   play,
   home,
+  help,
 } as const;

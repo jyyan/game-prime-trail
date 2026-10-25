@@ -44,6 +44,8 @@
 - **R45 U-B1 測試強度不足**【測試・低】：layer-U-B 審查指出：「下一個」測試只斷言大於前值而非精確值；掛載聚焦測試未驗 `focusVisible: false`（只有 e2e 涵蓋，且依賴 Chromium 支援）；GameBoard 焦點環測試 mock `matches`；e2e 11 的拒絕閃爍依賴約 300ms 計時，慢機可能 flaky。來源 GAME-24。
 - **R46 e2e 12「找不到題庫」只能在 dev server 跑**【測試・低】：靠動態 import 同一個 `useLevelStore` 單例並 `__setLoader(null)`，wrangler／build 版跑不了；要在正式 build 驗缺檔需在 `src/e2e-hooks.ts` 提供測試鉤子。來源 GAME-25。
 - **R47 U-B2／U-B3 測試強度不足**【測試・低】：layer-U-B 審查指出：首頁與過關視窗的文案斷言以同一個 `t()` 比對；LevelPicker blur 測試以 setProps 手動驅動；隨機鈕與主按鈕檢查依賴 class 名稱；WinModal 焦點測試未驗 `autofocus`、新紀錄徽章測試未驗字級／字重（對比要求所在）、插圖測試只比 src 字串。來源 GAME-25、GAME-26。
+- **R49 「已過關不顯示操作提示」缺單元測試**【測試・低】：PlayView 的 `showHint` 有 `!won` 條件，但目前無法在提示仍顯示時過關（過關必經玩家填格，填格即收起提示；「提示」按鈕只高亮不代填），單元測試無路徑可達。日後出現不經玩家填格的過關途徑（自動填完、匯入盤面）時補上。來源 GAME-29。
+- **R50 ControlsHint 與 ControlsHelp 重複 `{token}`→`<kbd>` 切分與 `.pt-kbd` 樣式**【UX・低】：GAME-29 可動檔案不含共用檔，故兩元件各一份；可抽成 `src/components/help/KbdText.vue` 一處維護。來源 GAME-29。
 
 ## 已結
 
