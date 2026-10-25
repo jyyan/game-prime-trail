@@ -5,12 +5,9 @@ import LevelPicker from '../components/picker/LevelPicker.vue';
 import { useLevelStore } from '../composables/useLevelStore';
 import { useProgress } from '../composables/useProgress';
 import { useRecords } from '../composables/useRecords';
-import { isPlainObject, readJson, writeJson } from '../composables/storage';
+import { mergeUiPrefs, readUiPrefs } from '../composables/useUiPrefs';
 import type { Completion, Difficulty, LastPlayed, RecordEntry } from '../core/types';
 import { t } from '../i18n';
-
-/** UI preferences (UI refresh spec §5.2); not scoped by library version, like settings. */
-const UI_KEY = 'prime-trail:v1:ui';
 
 const store = useLevelStore();
 const { status, count, libraryVersion } = store;
@@ -41,15 +38,12 @@ const canResume = computed(() => {
 
 // Rules card: expanded until the player collapses it, then remembered across visits.
 // Other fields stored under the same key are kept when the flag is written.
-function readUi(): Record<string, unknown> {
-  return readJson(UI_KEY, isPlainObject) ?? {};
-}
-const rulesCollapsed = ref(readUi().rulesCollapsed === true);
+const rulesCollapsed = ref(readUiPrefs().rulesCollapsed === true);
 const rulesId = 'pt-home-rules';
 
 function toggleRules(): void {
   rulesCollapsed.value = !rulesCollapsed.value;
-  writeJson(UI_KEY, { ...readUi(), rulesCollapsed: rulesCollapsed.value });
+  mergeUiPrefs({ rulesCollapsed: rulesCollapsed.value });
 }
 
 function onRandom(): void {

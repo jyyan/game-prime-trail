@@ -240,6 +240,83 @@ describe('usePlaySession: trail input and autosave', () => {
   });
 });
 
+// Controls-help spec §4.2: only the player's own successful fills count, so the first-time hint
+// cannot be dismissed by a hint, an undo, a retreat, a restart or a restored save.
+describe('usePlaySession: playerFills', () => {
+  it('a trail press that places counts once; a rejected press does not', async () => {
+    const s = await makeSession();
+    expect(s.playerFills.value).toBe(0);
+    s.onPress(55);
+    expect(s.shakeTarget.value?.cell).toBe(55);
+    expect(s.playerFills.value).toBe(0);
+    s.onPress(FIXTURE_PATH[3]);
+    expect(s.playerFills.value).toBe(1);
+  });
+
+  it('a drag over three cells counts three times', async () => {
+    const s = await makeSession();
+    // 4, 6, 8 are empty on easy; 5 and 7 are givens the head jumps over.
+    for (const n of [4, 6, 8]) s.onDrag(FIXTURE_PATH[n - 1]);
+    expect(s.game.value!.head.value).toBe(8);
+    expect(s.playerFills.value).toBe(3);
+  });
+
+  it('an arrow that extends counts; an illegal arrow does not', async () => {
+    const s = await makeSession();
+    s.onKey(key('ArrowDown'));
+    expect(s.playerFills.value).toBe(1);
+    s.onKey(key('ArrowUp'));
+    expect(s.shakeTarget.value?.cell).toBe(29);
+    expect(s.playerFills.value).toBe(1);
+  });
+
+  it('hint, undo, Backspace, Ctrl+Z and dragging back do not count', async () => {
+    const s = await makeSession();
+    s.hint();
+    expect(s.playerFills.value).toBe(0);
+    for (const n of [4, 6, 8]) s.onPress(FIXTURE_PATH[n - 1]);
+    expect(s.playerFills.value).toBe(3);
+    s.onDrag(FIXTURE_PATH[6]); // back onto 7: retreats, clearing 8
+    expect(s.game.value!.state.grid[FIXTURE_PATH[7]]).toBe(0);
+    s.undo();
+    s.onKey(key('Backspace'));
+    s.onKey(key('z', { ctrlKey: true }));
+    s.onClear();
+    s.hint();
+    expect(s.playerFills.value).toBe(3);
+  });
+
+  it('a direct confirm that fills counts; a refused confirm and Backspace do not', async () => {
+    const s = await makeSession();
+    s.onKey(key('Tab'));
+    s.onPress(29);
+    s.onKey(key('4'));
+    s.onKey(key('Enter'));
+    expect(s.game.value!.state.grid[29]).toBe(4);
+    expect(s.playerFills.value).toBe(1);
+    s.onKey(key('Backspace'));
+    s.onPress(19); // a given
+    s.onDigit(5);
+    s.onConfirm();
+    expect(s.shakeTarget.value?.cell).toBe(19);
+    expect(s.playerFills.value).toBe(1);
+  });
+
+  it('a restored save starts at 0, and a restart does not change the count', async () => {
+    useProgress(1).save(1, 'easy', snapAt(6));
+    const s = await makeSession();
+    expect(s.restored.value).toBe(true);
+    expect(s.playerFills.value).toBe(0);
+    s.onPress(FIXTURE_PATH[7]);
+    expect(s.playerFills.value).toBe(1);
+    const restart = s.requestRestart();
+    await answerConfirm(true);
+    await restart;
+    expect(s.game.value!.state.steps).toBe(0);
+    expect(s.playerFills.value).toBe(1);
+  });
+});
+
 describe('usePlaySession: direct input', () => {
   it('digits and Enter fill the selected cell', async () => {
     const s = await makeSession();

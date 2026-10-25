@@ -45,6 +45,12 @@ export interface Session {
   showSolution: Ref<boolean>;
   showPdf: Ref<boolean>;
   pdfBusy: Ref<boolean>;
+  /**
+   * Cells the player filled themselves on this map (controls-help spec §4.2): trail press, drag or
+   * arrow that placed, and direct-mode confirm. Hints, undo, retreats, restarts and restored saves
+   * leave it alone; a new map starts it at 0.
+   */
+  playerFills: Ref<number>;
   onPress(cell: Cell): void;
   onDrag(cell: Cell): void;
   onKey(e: KeyboardEvent): void;
@@ -98,6 +104,7 @@ export function usePlaySession(
   const showWin = ref(false);
   const showSolution = ref(false);
   const showPdf = ref(false);
+  const playerFills = ref(0);
 
   let gameScope: EffectScope | null = null;
   let progress: ReturnType<typeof useProgress> | null = null;
@@ -165,6 +172,7 @@ export function usePlaySession(
     showWin.value = false;
     showSolution.value = false;
     showPdf.value = false;
+    playerFills.value = 0;
   }
 
   function onWin(g: Game): void {
@@ -285,7 +293,9 @@ export function usePlaySession(
     const g = game.value;
     if (!g || isWon(g)) return;
     if (g.state.inputMode === 'trail') {
-      if (g.trailPress(cell) === 'rejected') shake(cell);
+      const result = g.trailPress(cell);
+      if (result === 'rejected') shake(cell);
+      else if (result === 'placed') playerFills.value++;
     } else {
       g.select(cell);
     }
@@ -294,7 +304,7 @@ export function usePlaySession(
   function onDrag(cell: Cell): void {
     const g = game.value;
     if (!g || isWon(g) || g.state.inputMode !== 'trail') return;
-    g.trailPress(cell);
+    if (g.trailPress(cell) === 'placed') playerFills.value++;
   }
 
   function undo(): void {
@@ -315,7 +325,8 @@ export function usePlaySession(
     if (!g || isWon(g)) return;
     if (g.state.pending === '' || g.state.selected === null) return;
     // Only a given cell (or a value out of range) refuses a confirm.
-    if (!g.confirmPending()) shake(g.state.selected);
+    if (g.confirmPending()) playerFills.value++;
+    else shake(g.state.selected);
   }
 
   function onClear(): void {
@@ -356,7 +367,9 @@ export function usePlaySession(
     if (g.state.inputMode === 'trail') {
       if (dir) {
         e.preventDefault();
-        if (g.trailStep(dir) === 'rejected') {
+        if (g.trailStep(dir) === 'placed') {
+          playerFills.value++;
+        } else {
           const hc = g.headCell.value;
           const target = hc === null ? -1 : step(hc, dir);
           shake(target === -1 ? hc : target);
@@ -463,6 +476,7 @@ export function usePlaySession(
     showSolution,
     showPdf,
     pdfBusy: pdf.busy,
+    playerFills,
     onPress,
     onDrag,
     onKey,
